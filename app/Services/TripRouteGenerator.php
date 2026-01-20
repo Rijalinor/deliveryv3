@@ -217,8 +217,8 @@ class TripRouteGenerator
             $closeSec = $this->timeToSec($stop->store->close_time ?? '23:59:00');
 
             $stop->update([
-                'eta_at' => $this->etaAtFromTripDate($trip->trip_date, $arrivalSec),
-                'close_at' => $this->etaAtFromTripDate($trip->trip_date, $closeSec),
+                'eta_at' => $this->etaAtFromTripDate($trip->start_date, $arrivalSec),
+                'close_at' => $this->etaAtFromTripDate($trip->start_date, $closeSec),
             ]);
             
 

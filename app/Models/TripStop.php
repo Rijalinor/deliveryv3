@@ -14,14 +14,25 @@ class TripStop extends Model
         'store_id',
         'status',
         'sequence',
-        'eta_at' => 'datetime',
-        'close_at' => 'datetime',
+        'eta_at',
+        'close_at',
         'is_late',
         'late_minutes',
         'skip_reason',
         'arrived_at',
         'done_at',
         'skipped_at',
+    ];
+
+    protected $casts = [
+        'eta_at' => 'datetime',
+        'close_at' => 'datetime',
+        'arrived_at' => 'datetime',
+        'done_at' => 'datetime',
+        'skipped_at' => 'datetime',
+        'is_late' => 'boolean',
+        'late_minutes' => 'integer',
+        'sequence' => 'integer',
     ];
     public function trip()
     {
