@@ -38,6 +38,6 @@ class Trip extends Model
     public function stops(): HasMany
     {
         return $this->hasMany(TripStop::class);
-        return $this->hasMany(\App\Models\TripStop::class);
+        
     }
 }
