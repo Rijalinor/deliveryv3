@@ -43,4 +43,14 @@ class TripStop extends Model
     {
         return $this->belongsTo(\App\Models\Store::class);
     }
+
+    public function arrivedToFinishMinutes(): ?int
+    {
+        if (! $this->arrived_at) return null;
+
+        $end = $this->done_at ?? $this->skipped_at;
+        if (! $end) return null;
+
+        return $this->arrived_at->diffInMinutes($end);
+    }
 }

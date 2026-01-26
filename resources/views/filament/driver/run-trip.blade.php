@@ -116,5 +116,43 @@
 
     {{-- Auto refresh ringan (hemat) supaya UI update kalau status berubah --}}
     <div wire:poll.5s="refreshTrip"></div>
+
+    <script>
+        document.addEventListener('livewire:init', () => {
+            if (window.__driverGeoWatchId !== undefined) {
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                return;
+            }
+
+            const componentId = @json($this->getId());
+            const getComponent = () => window.Livewire?.find(componentId);
+
+            window.__driverGeoWatchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const now = Date.now();
+                    if (window.__driverGeoLastSent && now - window.__driverGeoLastSent < 5000) {
+                        return;
+                    }
+                    window.__driverGeoLastSent = now;
+                    const component = getComponent();
+                    if (!component) return;
+                    component.call('updateDriverLocation', pos.coords.latitude, pos.coords.longitude);
+                },
+                (err) => {
+                    console.debug('Geolocation error', err);
+                },
+                { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 },
+            );
+
+            document.addEventListener('livewire:navigating', () => {
+                if (window.__driverGeoWatchId === undefined) return;
+                navigator.geolocation.clearWatch(window.__driverGeoWatchId);
+                window.__driverGeoWatchId = undefined;
+            }, { once: true });
+        });
+    </script>
     @endif
 </x-filament::page>

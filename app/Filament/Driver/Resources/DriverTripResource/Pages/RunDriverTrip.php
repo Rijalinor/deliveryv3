@@ -16,6 +16,7 @@ class RunDriverTrip extends Page
 {
     protected static string $resource = DriverTripResource::class;
     protected static string $view = 'filament.driver.run-trip';
+    private const EARTH_RADIUS_METERS = 6371000;
 
     public $record; // Trip model
 
@@ -187,6 +188,31 @@ class RunDriverTrip extends Page
         // untuk refresh map
     }
 
+    public function updateDriverLocation(float $lat, float $lng): void
+    {
+        $stop = $this->activeStop();
+        if (! $stop || $stop->status !== 'pending' || ! $stop->store) return;
+
+        $destLat = (float) $stop->store->lat;
+        $destLng = (float) $stop->store->lng;
+        if (! $destLat || ! $destLng) return;
+
+        $radius = (int) config('delivery.auto_arrive_radius_meters', 100);
+        $distance = $this->distanceMeters($lat, $lng, $destLat, $destLng);
+
+        if ($distance > $radius) return;
+
+        $stop->update([
+            'status' => 'arrived',
+            'arrived_at' => $stop->arrived_at ?? now(),
+        ]);
+
+        Notification::make()->title('Status: Arrived (auto)')->success()->send();
+
+        $this->refreshTrip();
+        $this->dispatchMapToActiveStop();
+    }
+
     public function markDone(): void
     {
         $stop = $this->activeStop();
@@ -257,5 +283,19 @@ class RunDriverTrip extends Page
         $this->record->refresh();
 
         Notification::make()->title('Trip selesai ✅')->success()->send();
+    }
+
+    private function distanceMeters(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $lat1 = deg2rad($lat1);
+        $lat2 = deg2rad($lat2);
+        $deltaLat = $lat2 - $lat1;
+        $deltaLng = deg2rad($lng2 - $lng1);
+
+        $a = sin($deltaLat / 2) ** 2
+            + cos($lat1) * cos($lat2) * sin($deltaLng / 2) ** 2;
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return self::EARTH_RADIUS_METERS * $c;
     }
 }

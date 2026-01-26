@@ -133,6 +133,21 @@ class StopsRelationManager extends RelationManager
                         return null;
                     }),
 
+                Tables\Columns\TextColumn::make('arrived_to_finish')
+                    ->label('Durasi Arrived')
+                    ->state(function ($record) {
+                        $minutes = $record->arrivedToFinishMinutes();
+                        if ($minutes === null) return '—';
+
+                        $hours = intdiv($minutes, 60);
+                        $mins = $minutes % 60;
+
+                        if ($hours > 0 && $mins > 0) return "{$hours}j {$mins}m";
+                        if ($hours > 0) return "{$hours}j";
+                        return "{$mins}m";
+                    })
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('store.close_time')
                     ->label('Jam Tutup')
                     ->formatStateUsing(fn($state) => $state ? substr($state, 0, 5) : '23:59')
