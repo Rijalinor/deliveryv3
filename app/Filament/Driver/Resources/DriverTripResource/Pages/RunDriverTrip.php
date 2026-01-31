@@ -55,12 +55,12 @@ class RunDriverTrip extends Page
             ->schema([
                 \Filament\Forms\Components\Grid::make(12)->schema([
                     \Filament\Forms\Components\Select::make('skip_reason')
-                        ->label('Alasan Skip')
+                        ->label('Alasan Reject / Gagal')
                         ->options([
                             'penerima_tidak_ada' => 'Penerima tidak ada',
                             'toko_tutup' => 'Toko tutup',
-                            'alamat_tidak_ditemukan' => 'Alamat tidak ditemukan',
-                            'minta_jadwal_ulang' => 'Minta jadwal ulang',
+                            'barang_rusak' => 'Barang rusak',
+                            'ditolak_penerima' => 'Ditolak penerima',
                             'lainnya' => 'Lainnya',
                         ])
                         ->native(false)
@@ -200,17 +200,37 @@ class RunDriverTrip extends Page
         $radius = (int) config('delivery.auto_arrive_radius_meters', 100);
         $distance = $this->distanceMeters($lat, $lng, $destLat, $destLng);
 
-        if ($distance > $radius) return;
+        \Illuminate\Support\Facades\Log::info("Driver Loc: {$lat}, {$lng} | Dest: {$destLat}, {$destLng} | Dist: {$distance}m | Radius: {$radius}m | Status: {$stop->status}");
 
-        $stop->update([
-            'status' => 'arrived',
-            'arrived_at' => $stop->arrived_at ?? now(),
-        ]);
+        if ($distance > $radius) {
+            // Logic Auto-Done: Kalau status sudah 'arrived' dan menjauh > radius -> tandai DONE
+            if ($stop->status === 'arrived') {
+                \Illuminate\Support\Facades\Log::info("Auto-Done Triggered for Stop #{$stop->id}");
+                $stop->update([
+                    'status' => 'done',
+                    'done_at' => now(),
+                ]);
+                
+                Notification::make()->title('Stop selesai (Auto-Done)')->success()->send();
+                $this->refreshTrip();
+                $this->dispatchMapToActiveStop();
+            }
+            return;
+        }
 
-        Notification::make()->title('Status: Arrived (auto)')->success()->send();
+        // Logic Auto-Arrived
+        if ($stop->status === 'pending') {
+             \Illuminate\Support\Facades\Log::info("Auto-Arrived Triggered for Stop #{$stop->id}");
+            $stop->update([
+                'status' => 'arrived',
+                'arrived_at' => $stop->arrived_at ?? now(),
+            ]);
 
-        $this->refreshTrip();
-        $this->dispatchMapToActiveStop();
+            Notification::make()->title('Status: Arrived (auto)')->success()->send();
+
+            $this->refreshTrip();
+            $this->dispatchMapToActiveStop();
+        }
     }
 
     public function markDone(): void
@@ -238,7 +258,7 @@ class RunDriverTrip extends Page
         $this->dispatchMapToActiveStop();
     }
 
-    public function markSkip(): void
+    public function markRejected(): void
     {
         $stop = $this->activeStop();
         if (! $stop) return;
@@ -247,7 +267,7 @@ class RunDriverTrip extends Page
         $note   = trim((string) ($this->data['skip_note'] ?? ''));
 
         if (! $reason) {
-            Notification::make()->title('Pilih alasan skip dulu')->danger()->send();
+            Notification::make()->title('Pilih alasan reject dulu')->danger()->send();
             return;
         }
 
@@ -255,12 +275,12 @@ class RunDriverTrip extends Page
         $finalReason = $reason . ($note !== '' ? (' | ' . $note) : '');
 
         $stop->update([
-            'status' => 'skipped',
-            'skipped_at' => now(),
+            'status' => 'rejected', // Ganti skipped jadi rejected
+            'skipped_at' => now(), // Kita pakai kolom skipped_at aja biar nggak ubah DB schema
             'skip_reason' => $finalReason,
         ]);
 
-        Notification::make()->title('Stop di-skip')->warning()->send();
+        Notification::make()->title('Pengiriman Ditolak (Rejected)')->danger()->send();
 
         $this->form->fill(['skip_reason' => null, 'skip_note' => null]);
         $this->refreshTrip();

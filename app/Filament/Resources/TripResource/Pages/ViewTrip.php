@@ -93,24 +93,14 @@ class ViewTrip extends ViewRecord
                 ->label('Generate Route (ORS)')
                 ->icon('heroicon-o-map')
                 ->color('success')
-                ->action(function (TripRouteGenerator $gen) {
-                    try {
-                        $gen->generate($this->record->fresh());
+                ->action(function () {
+                    \App\Jobs\GenerateTripRouteJob::dispatch($this->record);
 
-                        Notification::make()
-                            ->title('Route berhasil digenerate')
-                            ->success()
-                            ->send();
-
-                        // penting: refresh record biar map baca route_geojson terbaru
-                        $this->record->refresh();
-                    } catch (\Throwable $e) {
-                        Notification::make()
-                            ->title('Generate gagal')
-                            ->body($e->getMessage())
-                            ->danger()
-                            ->send();
-                    }
+                    Notification::make()
+                        ->title('Route generation started in background')
+                        ->body('Please wait a moment and refresh the page.')
+                        ->success()
+                        ->send();
                 }),
             ...parent::getHeaderActions(),
 

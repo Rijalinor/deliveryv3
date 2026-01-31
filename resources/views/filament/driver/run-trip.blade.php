@@ -98,12 +98,18 @@
             </x-filament::button>
             @endif
 
-            <x-filament::button color="success" wire:click="markDone">
-                Done
-            </x-filament::button>
+            {{-- Tombol 'Done' manual dihapus (diganti Auto-Done) --}}
+            {{-- Tombol 'Arrived' manual tetap ada sebagai backup kalau GPS error --}}
 
-            <x-filament::button color="danger" wire:click="markSkip">
-                Skip
+            @if($active->status === 'pending')
+            <x-filament::button color="warning" wire:click="markArrived">
+                Manual Arrived
+            </x-filament::button>
+            @endif
+
+            {{-- Tombol Reject (pengganti Skip) --}}
+            <x-filament::button color="danger" wire:click="markRejected">
+                Reject / Gagal
             </x-filament::button>
         </div>
 
