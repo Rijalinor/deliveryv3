@@ -6,6 +6,17 @@ use Illuminate\Support\Facades\Http;
 
 class OrsService
 {
+    private function http(string $key, int $timeout = 60)
+    {
+        return Http::retry(2, 1200)      // retry kalau koneksi ngadat
+            ->connectTimeout(20)         // penting untuk kasus "Resolving timed out"
+            ->timeout($timeout)
+            ->withHeaders([
+                'Authorization' => $key,
+                'Accept'        => 'application/json',
+                'Content-Type'  => 'application/json',
+            ]);
+    }
 
     public function optimize(array $start, array $jobs, int $startTimeSec = 0): array
     {
@@ -20,20 +31,18 @@ class OrsService
             'vehicles' => [[
                 'id' => 1,
                 'profile' => 'driving-car',
-                'start' => $start,            // [lng, lat]
-                'end' => $start,              // optional: balik gudang
-                'time_window' => [$startTimeSec, 24 * 3600 - 1], // boleh jalan sampai akhir hari
+                'start' => $start,
+                'end' => $start,
+                'time_window' => [$startTimeSec, 24 * 3600 - 1],
             ]],
             'jobs' => $jobs,
         ];
 
-        $res = Http::timeout(60)
-            ->withHeaders([
-                'Authorization' => $key,
-                'Accept' => 'application/json',
-                'Content-Type' => 'application/json',
-            ])
-            ->post($url, $payload);
+        try {
+            $res = $this->http($key, 60)->post($url, $payload);
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            $res = $e->response;
+        }
 
         if (! $res->successful()) {
             $body = $res->json();
@@ -44,11 +53,10 @@ class OrsService
 
         return $res->json();
     }
-    
+
     public function matrix(array $locations): array
     {
         $key = config('services.ors.key');
-
         if (! $key) {
             throw new \RuntimeException('ORS_API_KEY kosong. Cek .env dan config/services.php');
         }
@@ -57,23 +65,20 @@ class OrsService
         $url = "https://api.openrouteservice.org/v2/matrix/{$profile}";
 
         $payload = [
-            'locations' => $locations,          // [[lng, lat], ...]
-            'metrics' => ['duration'],          // seconds
+            'locations' => $locations,
+            'metrics' => ['duration'],
         ];
 
-        $res = Http::timeout(30)
-            ->withHeaders([
-                'Authorization' => $key,
-                'Accept' => 'application/json',
-                'Content-Type' => 'application/json',
-            ])
-            ->post($url, $payload);
+        try {
+            $res = $this->http($key, 30)->post($url, $payload);
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            $res = $e->response;
+        }
 
         if (! $res->successful()) {
             $body = $res->json();
             $msg  = data_get($body, 'error.message') ?? $res->body();
             $code = data_get($body, 'error.code') ?? $res->status();
-
             throw new \RuntimeException("ORS matrix error ({$code}): {$msg}");
         }
 
@@ -83,7 +88,6 @@ class OrsService
     public function directions(array $coordinates, string $profile = 'driving-car'): array
     {
         $key = config('services.ors.key');
-
         if (! $key) {
             throw new \RuntimeException('ORS_API_KEY kosong. Cek .env dan config/services.php');
         }
@@ -95,14 +99,19 @@ class OrsService
             'instructions' => false,
         ];
 
-        $res = Http::timeout(30)
-            ->withHeaders([
-                'Authorization' => $key,
-                // ✅ ini kuncinya untuk endpoint geojson
-                'Accept' => 'application/geo+json',
-                'Content-Type' => 'application/json',
-            ])
-            ->post($url, $payload);
+        try {
+            $res = Http::retry(2, 1200)
+                ->connectTimeout(20)
+                ->timeout(30)
+                ->withHeaders([
+                    'Authorization' => $key,
+                    'Accept' => 'application/geo+json',
+                    'Content-Type' => 'application/json',
+                ])
+                ->post($url, $payload);
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            $res = $e->response;
+        }
 
         if (! $res->successful()) {
             $body = $res->json();
