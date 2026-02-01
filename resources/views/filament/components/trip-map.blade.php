@@ -184,10 +184,10 @@ $mapId = 'trip-map-' . $trip->id;
         const driver = @json($driver);
         if (driver && driver.lat && driver.lng) {
             const driverIcon = new L.Icon({
-                iconUrl: 'https://cdn-icons-png.flaticon.com/512/71/71200.png', // Icon Motor/Driver
-                iconSize: [32, 32],
-                iconAnchor: [16, 16],
-                popupAnchor: [0, -16],
+                iconUrl: '/leaflet/truck-icon.png', // Icon Mobil Logistik
+                iconSize: [40, 40],
+                iconAnchor: [20, 20],
+                popupAnchor: [0, -20],
             });
 
             L.marker([driver.lat, driver.lng], { icon: driverIcon })

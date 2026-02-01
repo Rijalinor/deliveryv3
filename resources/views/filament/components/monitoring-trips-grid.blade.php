@@ -25,6 +25,9 @@
             'stops' => $stops,
             'geojson' => $geo,
             'driverName' => $trip->driver?->name ?? '—',
+            'driverLat' => (float) $trip->current_lat,
+            'driverLng' => (float) $trip->current_lng,
+            'driverTime' => $trip->updated_at->format('H:i:s'),
             'doneCount' => $trip->stops->where('status', 'done')->count(),
             'skipCount' => $trip->stops->where('status', 'skipped')->count(),
             'totalStops' => $trip->stops->count(),
@@ -169,6 +172,20 @@ L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
 
                     if (bounds.isValid()) {
                         map.fitBounds(bounds, { padding: [10, 10] });
+                    }
+
+                    // Marker Driver
+                    if (t.driverLat && t.driverLng) {
+                        const driverIcon = new L.Icon({
+                            iconUrl: '/leaflet/truck-icon.png',
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 16],
+                            popupAnchor: [0, -16],
+                        });
+
+                        L.marker([t.driverLat, t.driverLng], { icon: driverIcon })
+                            .addTo(map)
+                            .bindPopup('<b>' + t.driverName + '</b><br>Update: ' + t.driverTime);
                     }
                 }
 
