@@ -176,16 +176,16 @@ L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
 
                     // Marker Driver
                     if (t.driverLat && t.driverLng) {
-                        const driverIcon = new L.Icon({
-                            iconUrl: '/leaflet/truck-icon.png',
-                            iconSize: [32, 32],
-                            iconAnchor: [16, 16],
-                            popupAnchor: [0, -16],
-                        });
-
-                        L.marker([t.driverLat, t.driverLng], { icon: driverIcon })
-                            .addTo(map)
-                            .bindPopup('<b>' + t.driverName + '</b><br>Update: ' + t.driverTime);
+                        L.circleMarker([t.driverLat, t.driverLng], {
+                            radius: 6,
+                            fillColor: "#3b82f6",
+                            color: "#ffffff",
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.9
+                        })
+                        .addTo(map)
+                        .bindPopup('<b>' + t.driverName + '</b><br>Update: ' + t.driverTime);
                     }
                 }
 
