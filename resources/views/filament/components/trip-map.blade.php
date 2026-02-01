@@ -41,15 +41,25 @@ $stops = $trip->stops()
 
 $geo = $trip->route_geojson ? json_decode($trip->route_geojson, true) : null;
 
-$latestLocation = \App\Models\DriverLocation::where('trip_id', $trip->id)
-    ->latest()
-    ->first();
+$driver = null;
 
-$driver = $latestLocation ? [
-    'lat' => (float) $latestLocation->lat,
-    'lng' => (float) $latestLocation->lng,
-    'time' => $latestLocation->created_at->format('H:i:s'),
-] : null;
+if ($trip->current_lat && $trip->current_lng) {
+    $driver = [
+        'lat' => (float) $trip->current_lat,
+        'lng' => (float) $trip->current_lng,
+        'time' => $trip->updated_at->format('H:i:s'),
+    ];
+} else {
+    $latestLocation = \App\Models\DriverLocation::where('trip_id', $trip->id)
+        ->latest()
+        ->first();
+
+    $driver = $latestLocation ? [
+        'lat' => (float) $latestLocation->lat,
+        'lng' => (float) $latestLocation->lng,
+        'time' => $latestLocation->created_at->format('H:i:s'),
+    ] : null;
+}
 
 $mapId = 'trip-map-' . $trip->id;
 @endphp
@@ -111,7 +121,7 @@ $mapId = 'trip-map-' . $trip->id;
 
         const iconBlue = new L.Icon({
             iconUrl: '/leaflet/marker-icon-blue.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            shadowUrl: '/leaflet/marker-shadow.png',
             iconSize: [25, 41],
             iconAnchor: [12, 41],
             popupAnchor: [1, -34],
@@ -120,7 +130,7 @@ $mapId = 'trip-map-' . $trip->id;
 
         const iconGreen = new L.Icon({
             iconUrl: '/leaflet/marker-icon-green.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            shadowUrl: '/leaflet/marker-shadow.png',
             iconSize: [25, 41],
             iconAnchor: [12, 41],
             popupAnchor: [1, -34],
@@ -129,7 +139,7 @@ $mapId = 'trip-map-' . $trip->id;
 
         const iconRed = new L.Icon({
             iconUrl: '/leaflet/marker-icon-red.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            shadowUrl: '/leaflet/marker-shadow.png',
             iconSize: [25, 41],
             iconAnchor: [12, 41],
             popupAnchor: [1, -34],

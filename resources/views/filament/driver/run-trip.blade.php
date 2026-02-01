@@ -10,7 +10,13 @@
     <x-filament::section>
         <div class="flex items-start justify-between gap-4 flex-wrap">
             <div>
-                <div class="text-lg font-bold">Mode Eksekusi Trip</div>
+                <div class="flex items-center gap-2">
+                    <div class="text-lg font-bold">Mode Eksekusi Trip</div>
+                    <div id="connection-indicator" class="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-success-500/10 text-success-600">
+                        <span class="w-2 h-2 rounded-full bg-success-500 animate-pulse"></span>
+                        Online
+                    </div>
+                </div>
                 <div class="text-sm text-gray-600">
                     Trip #{{ $trip->id }} • Status: <b>{{ strtoupper($trip->status) }}</b> • {{ $progress }}
                 </div>
@@ -123,16 +129,11 @@
     {{-- Auto refresh ringan (hemat) supaya UI update kalau status berubah --}}
     <div wire:poll.5s="refreshTrip"></div>
 
+    @vite('resources/js/capacitor-location.js')
+
     <script type="module">
         // Import Capacitor location tracker if available
         const isNative = typeof window.Capacitor !== 'undefined' && window.Capacitor.getPlatform() !== 'web';
-        
-        if (isNative) {
-            // Load Capacitor location module
-            import('/resources/js/capacitor-location.js').catch(err => {
-                console.warn('Failed to load Capacitor location module:', err);
-            });
-        }
 
         document.addEventListener('livewire:init', async () => {
             if (window.__driverGeoWatchId !== undefined) {
@@ -209,7 +210,28 @@
                     window.__driverGeoWatchId = undefined;
                 }, { once: true });
             }
+            }
         });
+
+        // Connectivity Monitoring
+        (function() {
+            const indicator = document.getElementById('connection-indicator');
+            if (!indicator) return;
+
+            function updateStatus() {
+                if (navigator.onLine) {
+                    indicator.className = 'flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-success-500/10 text-success-600';
+                    indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-success-500 animate-pulse"></span> Online';
+                } else {
+                    indicator.className = 'flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-danger-500/10 text-danger-600';
+                    indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-danger-500"></span> Offline';
+                }
+            }
+
+            window.addEventListener('online', updateStatus);
+            window.addEventListener('offline', updateStatus);
+            updateStatus();
+        })();
     </script>
     @endif
 </x-filament::page>

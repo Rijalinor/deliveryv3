@@ -20,6 +20,16 @@ class TripRouteGenerator
             throw new \RuntimeException('Stops kosong / koordinat toko belum lengkap.');
         }
 
+        // Optimization: Cek apakah list toko berubah dibanding generate terakhir
+        $currentStoresHash = md5($stops->pluck('store_id')->sort()->implode(','));
+        $lastHash = $trip->ors_hash; // Kita perlu tambah kolom ini nantinya / pakai cache
+
+        // Untuk kesederhanaan sementara, kita bandingkan dengan timestamp generated_at
+        // Jika baru di-generate < 1 menit yang lalu, skip (proteksi double click)
+        if ($trip->generated_at && $trip->generated_at->diffInSeconds(now()) < 10) {
+            return;
+        }
+
         // === konfigurasi aturan ===
         $bufferMinutes = 10;     // warning mepet
         $serviceMinutes = (int) ($trip->service_minutes ?? 15);     // asumsi bongkar/serah terima per toko (boleh kamu ubah)

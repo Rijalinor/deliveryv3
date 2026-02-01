@@ -95,10 +95,13 @@ class TripResource extends Resource
                 Tables\Columns\TextColumn::make('stops_count')->counts('stops')->label('Stops')->sortable(),
                 Tables\Columns\TextColumn::make('progress')
                     ->label('Progress')
-                    ->state(
-                        fn($record) =>
-                        "{$record->stops_done}/{$record->stops_total} selesai • {$record->stops_skipped} skip • {$record->stops_remaining} sisa"
-                    )
+                    ->state(function ($record) {
+                        $total = $record->stops_total ?? 0;
+                        $done = $record->stops_done ?? 0;
+                        $skipped = $record->stops_skipped ?? 0;
+                        $remaining = $record->stops_remaining ?? 0;
+                        return "{$done}/{$total} selesai • {$skipped} skip • {$remaining} sisa";
+                    })
                     ->wrap(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
@@ -111,7 +114,7 @@ class TripResource extends Resource
 
             ])
             ->modifyQueryUsing(function ($query) {
-                return $query->withCount([
+                return $query->with('driver')->withCount([
                     'stops as stops_total',
                     'stops as stops_done' => fn($q) => $q->where('status', 'done'),
                     'stops as stops_skipped' => fn($q) => $q->where('status', 'skipped'),

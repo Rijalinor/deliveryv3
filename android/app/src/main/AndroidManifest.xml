@@ -25,9 +25,9 @@
         </activity>
 
         <service
-            android:name="com.equimaps.geolocation.GeolocationService"
+            android:name="com.equimaps.capacitor_background_geolocation.BackgroundGeolocationService"
             android:enabled="true"
-            android:exported="false"
+            android:exported="true"
             android:foregroundServiceType="location" />
 
         <provider
@@ -53,5 +53,6 @@
     <!-- Foreground Service for Background Location -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>
 

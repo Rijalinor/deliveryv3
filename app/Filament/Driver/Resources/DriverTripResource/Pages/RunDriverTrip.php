@@ -210,6 +210,12 @@ class RunDriverTrip extends Page
             'lng' => $lng,
         ]);
 
+        // ✅ Simpan posisi terakhir ke tabel trips agar monitoring admin cepat (tanpa scan tabel history)
+        $this->record->update([
+            'current_lat' => $lat,
+            'current_lng' => $lng,
+        ]);
+
         if ($distance > $radius) {
             // Logic Auto-Done: Kalau status sudah 'arrived' dan menjauh > radius -> tandai DONE
             if ($stop->status === 'arrived') {
