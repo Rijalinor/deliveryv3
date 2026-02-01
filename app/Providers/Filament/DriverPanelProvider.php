@@ -45,7 +45,7 @@ class DriverPanelProvider extends PanelProvider
             ])
 
             ->brandName('Delivery App') // nama aplikasi
-            ->brandLogo(asset('images/logo-jalldev.png'))
+            ->brandLogo('/images/logo-jalldev.png')
             ->brandLogoHeight('4rem')
             
             ->discoverResources(in: app_path('Filament/Driver/Resources'), for: 'App\\Filament\\Driver\\Resources')
@@ -74,6 +74,23 @@ class DriverPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->renderHook('panels::head.end', fn (): string => <<<'HTML'
+                <!-- PWA Manifest -->
+                <link rel="manifest" href="/manifest.json">
+                <meta name="theme-color" content="#10b981">
+                <link rel="apple-touch-icon" href="/images/logo-jalldev.png">
+
+                <!-- Service Worker Registration -->
+                <script>
+                    if ('serviceWorker' in navigator) {
+                        window.addEventListener('load', () => {
+                            navigator.serviceWorker.register('/service-worker.js')
+                                .then(reg => console.log('SW Registered!', reg.scope))
+                                .catch(err => console.log('SW Failed:', err));
+                        });
+                    }
+                </script>
+            HTML);
     }
 }

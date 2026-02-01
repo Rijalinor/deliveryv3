@@ -77,8 +77,8 @@ class ViewDriverTrip extends ViewRecord
                             ->success()
                             ->send();
 
-                        // penting: refresh record biar map baca route_geojson terbaru
-                        $this->record->refresh();
+                        // Refresh halaman total agar map & stats terupdate presisi
+                        return redirect(request()->header('Referer'));
                     } catch (\Throwable $e) {
                         Notification::make()
                             ->title('Generate gagal')

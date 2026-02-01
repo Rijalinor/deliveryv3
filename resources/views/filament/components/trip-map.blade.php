@@ -41,6 +41,16 @@ $stops = $trip->stops()
 
 $geo = $trip->route_geojson ? json_decode($trip->route_geojson, true) : null;
 
+$latestLocation = \App\Models\DriverLocation::where('trip_id', $trip->id)
+    ->latest()
+    ->first();
+
+$driver = $latestLocation ? [
+    'lat' => (float) $latestLocation->lat,
+    'lng' => (float) $latestLocation->lng,
+    'time' => $latestLocation->created_at->format('H:i:s'),
+] : null;
+
 $mapId = 'trip-map-' . $trip->id;
 @endphp
 
@@ -85,8 +95,9 @@ $mapId = 'trip-map-' . $trip->id;
         const map = L.map(mapId).setView([warehouse.lat, warehouse.lng], 13);
         el._leaflet_map = map;
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
+        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            attribution: 'Google Maps',
         }).addTo(map);
 
         const bounds = L.latLngBounds([]);
@@ -157,6 +168,24 @@ $mapId = 'trip-map-' . $trip->id;
                 const rb = routeLayer.getBounds();
                 if (rb && rb.isValid()) bounds.extend(rb);
             } catch (e) {}
+        }
+
+        // Marker Driver (Real-time)
+        const driver = @json($driver);
+        if (driver && driver.lat && driver.lng) {
+            const driverIcon = new L.Icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/71/71200.png', // Icon Motor/Driver
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, -16],
+            });
+
+            L.marker([driver.lat, driver.lng], { icon: driverIcon })
+                .addTo(map)
+                .bindPopup('<b>Lokasi Driver Saat Ini</b><br>Update terakhir: ' + driver.time);
+            
+            // Opsional: jangan masukkan driver ke bounds agar map tidak zoom out terlalu jauh
+            // bounds.extend([driver.lat, driver.lng]);
         }
 
         if (bounds.isValid()) {

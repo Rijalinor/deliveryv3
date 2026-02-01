@@ -191,7 +191,7 @@ class RunDriverTrip extends Page
     public function updateDriverLocation(float $lat, float $lng): void
     {
         $stop = $this->activeStop();
-        if (! $stop || $stop->status !== 'pending' || ! $stop->store) return;
+        if (! $stop || ! in_array($stop->status, ['pending', 'arrived']) || ! $stop->store) return;
 
         $destLat = (float) $stop->store->lat;
         $destLng = (float) $stop->store->lng;
@@ -201,6 +201,14 @@ class RunDriverTrip extends Page
         $distance = $this->distanceMeters($lat, $lng, $destLat, $destLng);
 
         \Illuminate\Support\Facades\Log::info("Driver Loc: {$lat}, {$lng} | Dest: {$destLat}, {$destLng} | Dist: {$distance}m | Radius: {$radius}m | Status: {$stop->status}");
+
+        // Simpan riwayat ke database
+        \App\Models\DriverLocation::create([
+            'driver_id' => auth()->id(),
+            'trip_id' => $this->record->id,
+            'lat' => $lat,
+            'lng' => $lng,
+        ]);
 
         if ($distance > $radius) {
             // Logic Auto-Done: Kalau status sudah 'arrived' dan menjauh > radius -> tandai DONE

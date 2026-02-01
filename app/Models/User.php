@@ -66,4 +66,8 @@ class User extends Authenticatable implements FilamentUser
     }
 
   
+    public function trips(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Trip::class, 'driver_id');
+    }
 }

@@ -45,9 +45,9 @@
 
                 this.map = L.map(this.$refs.map).setView([startLat, startLng], 14);
 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '&copy; OpenStreetMap contributors',
+                L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                    maxZoom: 20,
+                    attribution: 'Google Maps',
                 }).addTo(this.map);
 
                 this.marker = L.marker([startLat, startLng], {

@@ -106,7 +106,10 @@
 
                     el._leaflet_map = map;
 
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                attribution: 'Google Maps'
+            }).addTo(map);
 
                     const bounds = L.latLngBounds([]);
                     const shadow = '/leaflet/marker-shadow.png';

@@ -123,42 +123,94 @@
     {{-- Auto refresh ringan (hemat) supaya UI update kalau status berubah --}}
     <div wire:poll.5s="refreshTrip"></div>
 
-    <script>
-        document.addEventListener('livewire:init', () => {
-            if (window.__driverGeoWatchId !== undefined) {
-                return;
-            }
+    <script type="module">
+        // Import Capacitor location tracker if available
+        const isNative = typeof window.Capacitor !== 'undefined' && window.Capacitor.getPlatform() !== 'web';
+        
+        if (isNative) {
+            // Load Capacitor location module
+            import('/resources/js/capacitor-location.js').catch(err => {
+                console.warn('Failed to load Capacitor location module:', err);
+            });
+        }
 
-            if (!navigator.geolocation) {
+        document.addEventListener('livewire:init', async () => {
+            if (window.__driverGeoWatchId !== undefined) {
                 return;
             }
 
             const componentId = @json($this->getId());
             const getComponent = () => window.Livewire?.find(componentId);
 
-            window.__driverGeoWatchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    const now = Date.now();
-                    if (window.__driverGeoLastSent && now - window.__driverGeoLastSent < 5000) {
-                        return;
-                    }
-                    window.__driverGeoLastSent = now;
-                    const component = getComponent();
-                    if (!component) return;
-                    component.call('updateDriverLocation', pos.coords.latitude, pos.coords.longitude);
-                },
-                (err) => {
-                    console.debug('Geolocation error', err);
-                },
-                { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 },
-            );
+            // Check if running in Capacitor
+            if (isNative && window.CapacitorLocationTracker) {
+                console.log('Using Capacitor Native Location');
+                
+                const tracker = new window.CapacitorLocationTracker();
+                
+                try {
+                    await tracker.startTracking((position) => {
+                        const now = Date.now();
+                        if (window.__driverGeoLastSent && now - window.__driverGeoLastSent < 5000) {
+                            return;
+                        }
+                        window.__driverGeoLastSent = now;
+                        
+                        const component = getComponent();
+                        if (!component) return;
+                        
+                        component.call('updateDriverLocation', position.latitude, position.longitude);
+                        console.log('📍 Native location update', position.latitude, position.longitude);
+                    });
+                    
+                    window.__driverGeoTracker = tracker;
+                    
+                    document.addEventListener('livewire:navigating', () => {
+                        if (window.__driverGeoTracker) {
+                            window.__driverGeoTracker.stopTracking();
+                            window.__driverGeoTracker = null;
+                        }
+                    }, { once: true });
+                    
+                } catch (error) {
+                    console.error('Failed to start native location tracking:', error);
+                    alert('Gagal memulai GPS. Pastikan izin lokasi sudah diaktifkan.');
+                }
+                
+            } else {
+                // Fallback to web geolocation
+                console.log('Using Web Geolocation API');
+                
+                if (!navigator.geolocation) {
+                    console.error('Geolocation not supported');
+                    return;
+                }
 
-            document.addEventListener('livewire:navigating', () => {
-                if (window.__driverGeoWatchId === undefined) return;
-                navigator.geolocation.clearWatch(window.__driverGeoWatchId);
-                window.__driverGeoWatchId = undefined;
-            }, { once: true });
+                window.__driverGeoWatchId = navigator.geolocation.watchPosition(
+                    (pos) => {
+                        const now = Date.now();
+                        if (window.__driverGeoLastSent && now - window.__driverGeoLastSent < 5000) {
+                            return;
+                        }
+                        window.__driverGeoLastSent = now;
+                        const component = getComponent();
+                        if (!component) return;
+                        component.call('updateDriverLocation', pos.coords.latitude, pos.coords.longitude);
+                    },
+                    (err) => {
+                        console.debug('Geolocation error', err);
+                    },
+                    { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 },
+                );
+
+                document.addEventListener('livewire:navigating', () => {
+                    if (window.__driverGeoWatchId === undefined) return;
+                    navigator.geolocation.clearWatch(window.__driverGeoWatchId);
+                    window.__driverGeoWatchId = undefined;
+                }, { once: true });
+            }
         });
     </script>
     @endif
 </x-filament::page>
+

@@ -43,7 +43,7 @@ class AdminPanelProvider extends PanelProvider
             ])
 
             ->brandName('Delivery App') // nama aplikasi
-            ->brandLogo(asset('images/logo-jalldev.png'))
+            ->brandLogo('/images/logo-jalldev.png')
             ->brandLogoHeight('4rem')
 
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')

@@ -38,8 +38,10 @@
         if (!window.__deliveryMaps[mapId]) {
             const map = L.map(mapId).setView([currentDest.lat, currentDest.lng], 15);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19
+            // Google Streets
+            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                attribution: 'Google Maps'
             }).addTo(map);
 
             const marker = L.marker([currentDest.lat, currentDest.lng]).addTo(map)
