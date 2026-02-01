@@ -183,16 +183,16 @@ $mapId = 'trip-map-' . $trip->id;
         // Marker Driver (Real-time)
         const driver = @json($driver);
         if (driver && driver.lat && driver.lng) {
-            const driverIcon = new L.Icon({
-                iconUrl: '/leaflet/truck-icon.png', // Icon Mobil Logistik
-                iconSize: [40, 40],
-                iconAnchor: [20, 20],
-                popupAnchor: [0, -20],
-            });
-
-            L.marker([driver.lat, driver.lng], { icon: driverIcon })
-                .addTo(map)
-                .bindPopup('<b>Lokasi Driver Saat Ini</b><br>Update terakhir: ' + driver.time);
+            L.circleMarker([driver.lat, driver.lng], {
+                radius: 8,
+                fillColor: "#3b82f6",
+                color: "#ffffff",
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.9
+            })
+            .addTo(map)
+            .bindPopup('<b>Lokasi Driver Saat Ini</b><br>Update terakhir: ' + driver.time);
             
             // Opsional: jangan masukkan driver ke bounds agar map tidak zoom out terlalu jauh
             // bounds.extend([driver.lat, driver.lng]);
