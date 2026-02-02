@@ -10,8 +10,8 @@
     ];
 @endphp
 
-<div class="rounded-xl border overflow-hidden" wire:ignore>
-    <div id="{{ $mapId }}" style="height: 380px; width: 100%;"></div>
+<div class="relative" wire:ignore>
+    <div id="{{ $mapId }}" class="w-full shadow-inner" style="height: 350px;"></div>
 </div>
 
 @once

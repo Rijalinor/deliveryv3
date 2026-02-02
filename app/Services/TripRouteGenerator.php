@@ -20,12 +20,18 @@ class TripRouteGenerator
             throw new \RuntimeException('Stops kosong / koordinat toko belum lengkap.');
         }
 
-        // Optimization: Cek apakah list toko berubah dibanding generate terakhir
-        $currentStoresHash = md5($stops->pluck('store_id')->sort()->implode(','));
-        $lastHash = $trip->ors_hash; // Kita perlu tambah kolom ini nantinya / pakai cache
+        // Reset sequence lama sebelum generate baru (biar gak ada data nyangkut)
+        $trip->stops()->update([
+            'sequence' => null,
+            'eta_at' => null,
+            'close_at' => null,
+        ]);
 
-        // Untuk kesederhanaan sementara, kita bandingkan dengan timestamp generated_at
-        // Jika baru di-generate < 1 menit yang lalu, skip (proteksi double click)
+        $trip->load(['stops.store']); // reload after update
+
+        // optimization: Cek apakah list toko berubah dibanding generate terakhir
+        $currentStoresHash = md5($stops->pluck('store_id')->sort()->implode(','));
+        // Jika baru di-generate < 10 detik yang lalu, skip (proteksi double click)
         if ($trip->generated_at && $trip->generated_at->diffInSeconds(now()) < 10) {
             return;
         }
@@ -241,6 +247,9 @@ class TripRouteGenerator
         foreach ($orderedStops as $stop) {
             $coords[] = [(float) $stop->store->lng, (float) $stop->store->lat];
         }
+
+        // TAMBAHKAN BALIK KE GUDANG (biar garis di map nutup)
+        $coords[] = [(float) $trip->start_lng, (float) $trip->start_lat];
 
 
 

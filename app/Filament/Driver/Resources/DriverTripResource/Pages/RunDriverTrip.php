@@ -91,7 +91,7 @@ class RunDriverTrip extends Page
 
     public function doneStops(): int
     {
-        return $this->record->stops()->whereIn('status', ['done', 'skipped'])->count();
+        return $this->record->stops()->whereIn('status', ['done', 'skipped', 'rejected'])->count();
     }
 
     public function activeStop()
