@@ -20,242 +20,117 @@ class TripRouteGenerator
             throw new \RuntimeException('Stops kosong / koordinat toko belum lengkap.');
         }
 
-        // Reset sequence lama sebelum generate baru (biar gak ada data nyangkut)
+        // Reset sequence lama sebelum generate baru
         $trip->stops()->update([
             'sequence' => null,
             'eta_at' => null,
             'close_at' => null,
         ]);
 
-        $trip->load(['stops.store']); // reload after update
+        $trip->load(['stops.store']);
 
-        // optimization: Cek apakah list toko berubah dibanding generate terakhir
-        $currentStoresHash = md5($stops->pluck('store_id')->sort()->implode(','));
-        // Jika baru di-generate < 10 detik yang lalu, skip (proteksi double click)
-        if ($trip->generated_at && $trip->generated_at->diffInSeconds(now()) < 10) {
-            return;
-        }
-
-        // === konfigurasi aturan ===
-        $bufferMinutes = 10;     // warning mepet
-        $serviceMinutes = (int) ($trip->service_minutes ?? 15);     // asumsi bongkar/serah terima per toko (boleh kamu ubah)
+        // === Konfigurasi Aturan ===
+        $bufferMinutes = 10;
+        $serviceMinutes = (int) ($trip->service_minutes ?? 5);
+        $trafficFactor = (float) ($trip->traffic_factor ?? 1.30);
+        
         $bufferSec = $bufferMinutes * 60;
         $serviceSec = $serviceMinutes * 60;
 
-        // start time (dari trip_date + start_time)
-        // kalau start_time null, anggap 08:00
         $startTime = $trip->start_time ?? '08:00:00';
         $startTimeSec = $this->timeToSec($startTime);
+        $startCoord = [(float) $trip->start_lng, (float) $trip->start_lat];
 
-        // start coordinate gudang
-        $start = [(float) $trip->start_lng, (float) $trip->start_lat];
-
-        // buat jobs untuk ORS optimization
-        // IMPORTANT: job.id harus integer unik
+        // 1. Optimization (Vrp / TSP) - Mencari urutan terbaik
         $jobs = [];
-        foreach ($stops as $i => $stop) {
-            $close = $stop->store->close_time ?? '23:59:00';
-            $closeSec = $this->timeToSec($close);
-
-            // time window: boleh dikunjungi dari start sampai (close - buffer)
+        foreach ($stops as $stop) {
+            $closeSec = $this->timeToSec($stop->store->close_time ?? '23:59:00');
             $latestArrival = max($startTimeSec, $closeSec - $bufferSec);
 
             $jobs[] = [
-                'id' => (int) $stop->id, // pakai stop_id biar gampang mapping
+                'id' => (int) $stop->id,
                 'location' => [(float) $stop->store->lng, (float) $stop->store->lat],
                 'service' => $serviceSec,
                 'time_windows' => [[$startTimeSec, $latestArrival]],
             ];
         }
 
-        // call ORS optimization (1 request)
-        $result = $this->ors->optimize($start, $jobs, $startTimeSec);
+        $optimizationResult = $this->ors->optimize($startCoord, $jobs, $startTimeSec);
+        $steps = data_get($optimizationResult, 'routes.0.steps', []);
 
-        $steps = data_get($result, 'routes.0.steps', []);
         if (empty($steps)) {
-            throw new \RuntimeException('ORS optimization tidak mengembalikan steps.');
+            throw new \RuntimeException('ORS optimization gagal menentukan urutan.');
         }
 
-
-        // step pertama biasanya "start", sisanya job steps
+        // Mapping urutan (sequence) berdasarkan hasil optimization
         $sequence = 1;
-        $currentSec = $startTimeSec; // waktu mulai trip dalam detik dari 00:00
-
         foreach ($steps as $step) {
             $jobId = data_get($step, 'job');
-            if (! $jobId) {
-                continue;
-            }
+            if (!$jobId) continue;
 
             $stop = $stops->firstWhere('id', (int) $jobId);
-            if (! $stop) continue;
-
-            // 1) coba ambil arrival dari ORS (kalau ada)
-            $arrivalSec = data_get($step, 'arrival');
-
-
-            // 2) fallback: hitung arrival dari durasi step
-            if ($arrivalSec === null) {
-                $travelSec = (int) data_get($step, 'duration', 0);
-
-                // kalau duration kosong, fallback kasar 10 menit
-                if ($travelSec <= 0) {
-                    $travelSec = 600;
-                }
-
-                $arrivalSec = $currentSec + $travelSec;
+            if ($stop) {
+                $stop->update(['sequence' => $sequence++]);
             }
-
-
-
-            // warning mepet
-            $closeSec = $this->timeToSec($stop->store->close_time ?? '23:59:00');
-            $mepet = (($closeSec - (int) $arrivalSec) <= $bufferSec);
-
-
-
-            $stop->update([
-                'sequence' => $sequence++,
-                // ✅ ini yang benar sesuai DB kamu
-            ]);
-
-
-
-            // update current time: arrival + service
-            $service = (int) data_get($step, 'service', $serviceSec); // kalau ORS kirim service, pakai itu
-            if ($service <= 0) $service = $serviceSec;
-
-            $currentSec = (int) $arrivalSec + $service;
         }
 
-
-        // simpan summary (opsional)
-        $trip->update([
-            'generated_at' => now(),
-            'total_distance_m' => data_get($result, 'routes.0.distance'),
-            'total_duration_s' => data_get($result, 'routes.0.duration'),
-        ]);
-
+        // 2. High-Precision Matrix (untuk ETA dan Jarak Akurat antar segmen)
         $orderedStops = $trip->stops()
             ->with('store')
             ->whereNotNull('sequence')
             ->orderBy('sequence')
             ->get();
 
-        if ($orderedStops->isEmpty()) {
-            throw new \RuntimeException('Tidak ada stop ber-sequence. Generate urutan dulu.');
-        }
-
-        $coords = [
-            [(float) $trip->start_lng, (float) $trip->start_lat],
-        ];
-
-        // ===============================
-        // ETA PRESISI: ORS MATRIX (1 request)
-        // ===============================
-        $points = [
-            [(float) $trip->start_lng, (float) $trip->start_lat],
-        ];
-
+        $points = [$startCoord];
         foreach ($orderedStops as $s) {
             $points[] = [(float) $s->store->lng, (float) $s->store->lat];
         }
-        // coords sudah berisi gudang + stop urut (lng,lat)
-
-        // pastikan semua point valid [lng, lat] numeric
-        $points = array_values(array_filter($points, function ($p) {
-            if (!is_array($p) || count($p) !== 2) return false;
-
-            $lng = $p[0];
-            $lat = $p[1];
-
-            if (!is_numeric($lng) || !is_numeric($lat)) return false;
-
-            $lng = (float) $lng;
-            $lat = (float) $lat;
-
-            // range valid koordinat bumi
-            if ($lng < -180 || $lng > 180) return false;
-            if ($lat < -90 || $lat > 90) return false;
-
-            return true;
-        }));
-
-        if (count($points) < 2) {
-            throw new \RuntimeException('Matrix butuh minimal 2 lokasi (gudang + 1 toko). Cek koordinat trip/store.');
-        }
-
-
-        // pastikan semua point valid [lng, lat] numeric
-        $points = array_values(array_filter($points, function ($p) {
-            if (!is_array($p) || count($p) !== 2) return false;
-
-            $lng = $p[0];
-            $lat = $p[1];
-
-            if (!is_numeric($lng) || !is_numeric($lat)) return false;
-
-            $lng = (float) $lng;
-            $lat = (float) $lat;
-
-            // range valid koordinat bumi
-            if ($lng < -180 || $lng > 180) return false;
-            if ($lat < -90 || $lat > 90) return false;
-
-            return true;
-        }));
-
-        if (count($points) < 2) {
-            throw new \RuntimeException('Matrix butuh minimal 2 lokasi (gudang + 1 toko). Cek koordinat trip/store.');
-        }
-
 
         $matrix = $this->ors->matrix($points);
         $durations = data_get($matrix, 'durations', []);
+        $distances = data_get($matrix, 'distances', []);
 
-        if (!is_array($durations) || empty($durations)) {
-            throw new \RuntimeException('ORS matrix tidak mengembalikan durations.');
+        if (empty($durations) || empty($distances)) {
+            throw new \RuntimeException('Gagal mengambil data matrix (durasi/jarak).');
         }
 
         $currentSec = $startTimeSec;
+        $totalDistance = 0;
 
         foreach ($orderedStops as $idx => $stop) {
-            $from = $idx;      // 0->1, 1->2, ...
-            $to   = $idx + 1;
+            $fromIdx = $idx;
+            $toIdx = $idx + 1;
 
-            $trafficFactor = 1.35; // kota + logistik
-            $travelSec = (int) (($durations[$from][$to] ?? 0) * $trafficFactor);
+            $segmentDuration = (int) (($durations[$fromIdx][$toIdx] ?? 0) * $trafficFactor);
+            $segmentDistance = (float) ($distances[$fromIdx][$toIdx] ?? 0);
 
-            if ($travelSec <= 0) $travelSec = 600;
-
-            $arrivalSec = $currentSec + $travelSec;
-
+            $totalDistance += $segmentDistance;
+            $arrivalSec = $currentSec + $segmentDuration;
+            
             $closeSec = $this->timeToSec($stop->store->close_time ?? '23:59:00');
 
             $stop->update([
                 'eta_at' => $this->etaAtFromTripDate($trip->start_date, $arrivalSec),
                 'close_at' => $this->etaAtFromTripDate($trip->start_date, $closeSec),
             ]);
-            
 
-            $microDelaySec = 5 * 60; // 5 menit
-            $currentSec = $arrivalSec + $serviceSec + $microDelaySec;
-            
+            // Waktu keberangkatan dari toko ini: Kedatangan + Waktu Layanan
+            $currentSec = $arrivalSec + $serviceSec;
         }
 
-
-        foreach ($orderedStops as $stop) {
-            $coords[] = [(float) $stop->store->lng, (float) $stop->store->lat];
+        // 3. Final Directions GeoJSON (untuk tampilan Map)
+        $coords = [$startCoord];
+        foreach ($orderedStops as $s) {
+            $coords[] = [(float) $s->store->lng, (float) $s->store->lat];
         }
+        $coords[] = $startCoord; // Kembali ke gudang
 
-        // TAMBAHKAN BALIK KE GUDANG (biar garis di map nutup)
-        $coords[] = [(float) $trip->start_lng, (float) $trip->start_lat];
-
-
-
-        $geojson = $this->ors->directions($coords);
-
+        $geojson = $this->ors->directions($coords, $trip->ors_profile ?? 'driving-car');
+        
         $trip->update([
+            'generated_at' => now(),
+            'total_distance_m' => (int) $totalDistance,
+            'total_duration_s' => (int) ($currentSec - $startTimeSec),
             'route_geojson' => json_encode($geojson),
         ]);
     }
@@ -278,8 +153,6 @@ class TripRouteGenerator
 
         return sprintf('%s %02d:%02d:%02d', $date, $h, $m, $s);
     }
-
-
 
     private function timeToSec(string $time): int
     {

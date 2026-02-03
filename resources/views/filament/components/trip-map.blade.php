@@ -184,8 +184,8 @@ $mapId = 'trip-map-' . $trip->id;
         const driver = @json($driver);
         if (driver && driver.lat && driver.lng) {
             L.circleMarker([driver.lat, driver.lng], {
-                radius: 8,
-                fillColor: "#3b82f6",
+                radius: 11,
+                fillColor: "#f97316", // Orange
                 color: "#ffffff",
                 weight: 2,
                 opacity: 1,

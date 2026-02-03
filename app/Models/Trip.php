@@ -15,11 +15,14 @@ class Trip extends Model
         'start_lat',
         'start_lng',
         'status',
+        'notice',
         'generated_at',
         'total_distance_m',
         'total_duration_s',
         'route_geojson',
         'ors_profile',
+        'service_minutes',
+        'traffic_factor',
     ];
 
     protected $casts = [
@@ -27,6 +30,8 @@ class Trip extends Model
         'generated_at' => 'datetime',
         'start_lat' => 'float',
         'start_lng' => 'float',
+        'service_minutes' => 'integer',
+        'traffic_factor' => 'float',
     ];
 
     

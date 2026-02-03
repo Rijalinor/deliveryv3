@@ -66,7 +66,7 @@ class OrsService
 
         $payload = [
             'locations' => $locations,
-            'metrics' => ['duration'],
+            'metrics' => ['duration', 'distance'],
         ];
 
         try {

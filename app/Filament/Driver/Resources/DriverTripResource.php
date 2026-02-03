@@ -47,34 +47,91 @@ class DriverTripResource extends Resource
                 ->preload()
                 ->options(\App\Models\Store::query()->pluck('name', 'id'))
                 ->required()
-                ->helperText('Tidak boleh pilih toko yang sama dalam 1 trip.')
-                 // jangan masuk ke kolom trips
+                ->helperText('Tidak boleh pilih toko yang sama dalam 1 trip.'),
+    
+            Forms\Components\Textarea::make('notice')
+                ->label('Catatan Driver')
+                ->placeholder('Tulis catatan untuk trip ini jika ada...')
+                ->rows(3)
+                ->columnSpanFull(),
         ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('id')->label('#')->sortable(),
-                Tables\Columns\TextColumn::make('start_date')->date('d M Y')->sortable(),
-                Tables\Columns\TextColumn::make('start_time')->sortable(),
-                Tables\Columns\TextColumn::make('status')->badge()->sortable(),
+            ->contentGrid([
+                'md' => 2,
+                'xl' => 3,
             ])
-            ->bulkActions([])
+            ->columns([
+                Tables\Columns\Layout\Stack::make([
+                    Tables\Columns\TextColumn::make('start_date')
+                        ->label('Tanggal')
+                        ->date('d M Y')
+                        ->weight('bold')
+                        ->size('lg')
+                        ->icon('heroicon-m-calendar'),
+                    
+                    Tables\Columns\Layout\Split::make([
+                        Tables\Columns\TextColumn::make('start_time')
+                            ->label('Jam')
+                            ->icon('heroicon-m-clock')
+                            ->color('gray'),
+                        
+                        Tables\Columns\TextColumn::make('status')
+                            ->badge()
+                            ->color(fn ($state) => match ($state) {
+                                'planned' => 'gray',
+                                'on_going' => 'warning',
+                                'done' => 'success',
+                                'cancelled' => 'danger',
+                                default => 'gray',
+                            }),
+                    ]),
 
+                    Tables\Columns\TextColumn::make('progress')
+                        ->label('Progress Pengiriman')
+                        ->state(function ($record) {
+                            $total = $record->stops()->count();
+                            $done = $record->stops()->where('status', 'done')->count();
+                            return "Selesai: {$done}/{$total} Toko";
+                        })
+                        ->description(fn($record) => 
+                            ($record->stops()->whereIn('status', ['pending', 'arrived'])->count() ?? 0) . ' sisa • ' . 
+                            ($record->stops()->whereIn('status', ['skipped', 'rejected'])->count() ?? 0) . ' reject'
+                        )
+                        ->color('primary')
+                        ->icon('heroicon-m-truck'),
+
+                    Tables\Columns\TextColumn::make('notice')
+                        ->label('Catatan')
+                        ->icon('heroicon-m-document-text')
+                        ->color('gray')
+                        ->size('sm')
+                        ->limit(40)
+                        ->placeholder('Tidak ada catatan khusus.')
+                        ->wrap(),
+                ])->space(3),
+            ])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('run')
+                    ->label('Mulai Trip')
+                    ->icon('heroicon-m-play-circle')
+                    ->color('success')
+                    ->button()
+                    ->url(fn (Trip $record): string => Pages\RunDriverTrip::getUrl(['record' => $record]))
+                    ->visible(fn (Trip $record) => in_array($record->status, ['planned', 'on_going'])),
+                
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                ])->color('gray'),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->bulkActions([]);
     }
 
     public static function getRelations(): array

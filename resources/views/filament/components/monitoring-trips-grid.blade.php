@@ -29,9 +29,12 @@
             'driverLng' => (float) $trip->current_lng,
             'driverTime' => $trip->updated_at->format('H:i:s'),
             'doneCount' => $trip->stops->where('status', 'done')->count(),
-            'skipCount' => $trip->stops->where('status', 'skipped')->count(),
+            'skipCount' => $trip->stops->whereIn('status', ['skipped', 'rejected'])->count(),
             'totalStops' => $trip->stops->count(),
             'url' => \App\Filament\Resources\TripResource::getUrl('view', ['record' => $trip]),
+            'notice' => $trip->notice,
+            'startTime' => $trip->start_time,
+            'distance' => $trip->total_distance_m ? round($trip->total_distance_m / 1000, 1) . 'km' : null,
         ];
     })->values()->all();
 @endphp
@@ -41,30 +44,45 @@
 @else
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         @foreach($payload as $t)
-            <a href="{{ $t['url'] }}" class="block">
-                <div class="rounded-xl border border-gray-800 bg-gray-900/30 hover:bg-gray-900/50 transition overflow-hidden">
+            <a href="{{ $t['url'] }}" class="block group">
+                <div class="rounded-xl border border-gray-800 bg-gray-900/30 hover:bg-gray-900/50 hover:border-gray-700 transition overflow-hidden">
                     <div class="p-4 flex items-start justify-between gap-3">
-                        <div>
-                            <div class="text-sm text-gray-400">Driver</div>
-                            <div class="font-semibold">{{ $t['driverName'] }}</div>
-                            <div class="text-xs text-gray-500 mt-1">
-                                Trip #{{ $t['id'] }} • ON GOING
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-gray-100">{{ $t['driverName'] }}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] bg-orange-500/20 text-orange-400 font-bold uppercase tracking-wider">ON GOING</span>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                                <span>#{{ $t['id'] }}</span>
+                                @if($t['startTime'])
+                                    <span>• {{ $t['startTime'] }}</span>
+                                @endif
+                                @if($t['distance'])
+                                    <span class="text-gray-400">• {{ $t['distance'] }}</span>
+                                @endif
                             </div>
                         </div>
 
                         <div class="text-right">
-                            <div class="text-xs text-gray-400">Progress</div>
-                            <div class="text-sm font-semibold text-gray-200">
+                            <div class="text-sm font-bold text-gray-100">
                                 {{ $t['doneCount'] + $t['skipCount'] }} / {{ $t['totalStops'] }}
                             </div>
-                            <div class="text-[11px] text-gray-500">
-                                Done {{ $t['doneCount'] }} • Skip {{ $t['skipCount'] }}
+                            <div class="text-[10px] text-gray-500 font-medium">
+                                {{ $t['doneCount'] }} Selesai • {{ $t['skipCount'] }} Reject
                             </div>
                         </div>
                     </div>
 
+                    @if($t['notice'])
+                        <div class="px-4 pb-3">
+                            <div class="text-[11px] text-gray-400 bg-gray-800/40 rounded-lg px-2 py-1.5 border border-gray-700/50 italic py-1">
+                                "{{ \Illuminate\Support\Str::limit($t['notice'], 80) }}"
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="px-4 pb-4">
-                        <div id="{{ $t['mapId'] }}" style="height: 190px; width: 100%; border-radius: 12px; overflow:hidden;"></div>
+                        <div id="{{ $t['mapId'] }}" class="group-hover:opacity-100 transition-opacity" style="height: 180px; width: 100%; border-radius: 10px; overflow:hidden;"></div>
                     </div>
                 </div>
             </a>
@@ -177,8 +195,8 @@ L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                     // Marker Driver
                     if (t.driverLat && t.driverLng) {
                         L.circleMarker([t.driverLat, t.driverLng], {
-                            radius: 6,
-                            fillColor: "#3b82f6",
+                            radius: 8,
+                            fillColor: "#f97316", // Orange
                             color: "#ffffff",
                             weight: 2,
                             opacity: 1,

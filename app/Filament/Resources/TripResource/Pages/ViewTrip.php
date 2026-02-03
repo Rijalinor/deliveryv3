@@ -25,30 +25,36 @@ class ViewTrip extends ViewRecord
             Section::make('Ringkasan Trip')
                 ->schema([
                     Grid::make(5)->schema([
-
                         TextEntry::make('stops_total')
-                            ->label('Total')
+                            ->label('Total Toko')
                             ->state(fn($record) => $record->stops()->count())
+                            ->icon('heroicon-o-shopping-bag')
+                            ->color('primary')
                             ->badge(),
 
                         TextEntry::make('stops_done')
-                            ->label('Done')
+                            ->label('Selesai')
                             ->state(fn($record) => $record->stops()->where('status', 'done')->count())
+                            ->icon('heroicon-o-check-circle')
+                            ->color('success')
                             ->badge(),
 
                         TextEntry::make('stops_skipped')
-                            ->label('Skipped')
-                            ->state(fn($record) => $record->stops()->where('status', 'skipped')->count())
+                            ->label('Reject')
+                            ->state(fn($record) => $record->stops()->whereIn('status', ['skipped', 'rejected'])->count())
+                            ->icon('heroicon-o-x-circle')
+                            ->color('danger')
                             ->badge(),
 
                         TextEntry::make('stops_remaining')
                             ->label('Sisa')
                             ->state(fn($record) => $record->stops()->whereIn('status', ['pending', 'arrived'])->count())
+                            ->icon('heroicon-o-clock')
+                            ->color('warning')
                             ->badge(),
 
                         TextEntry::make('status')
                             ->label('Status Trip')
-                            ->state(fn($record) => $record->status)
                             ->badge()
                             ->color(fn($state) => match ($state) {
                                 'planned' => 'gray',
@@ -56,18 +62,77 @@ class ViewTrip extends ViewRecord
                                 'done' => 'success',
                                 default => 'gray',
                             }),
-
-
                     ]),
-                ])
-                ->collapsed(false),
+                ]),
+
+            Grid::make(3)->schema([
+                Section::make('Informasi Dasar')
+                    ->schema([
+                        TextEntry::make('driver.name')
+                            ->label('Driver')
+                            ->icon('heroicon-o-user'),
+                        TextEntry::make('start_date')
+                            ->label('Tanggal')
+                            ->date('d M Y')
+                            ->icon('heroicon-o-calendar'),
+                        TextEntry::make('start_time')
+                            ->label('Mulai')
+                            ->icon('heroicon-o-clock'),
+                        TextEntry::make('ors_profile')
+                            ->label('Mode Kendaraan')
+                            ->badge()
+                            ->icon('heroicon-o-truck'),
+                        TextEntry::make('service_minutes')
+                            ->label('Waktu di Toko')
+                            ->suffix(' menit')
+                            ->icon('heroicon-o-clock'),
+                        TextEntry::make('traffic_factor')
+                            ->label('Faktor Traffic')
+                            ->state(fn($record) => $record->traffic_factor . 'x')
+                            ->icon('heroicon-o-bolt'),
+                    ])->columnSpan(1),
+
+                Section::make('Detail Perjalanan')
+                    ->schema([
+                        TextEntry::make('total_distance_m')
+                            ->label('Total Jarak')
+                            ->state(function ($record) {
+                                if (!$record->total_distance_m) return '-';
+                                return round($record->total_distance_m / 1000, 2) . ' km';
+                            })
+                            ->icon('heroicon-o-map'),
+                        TextEntry::make('total_duration_s')
+                            ->label('Estimasi Waktu')
+                            ->state(function ($record) {
+                                if (!$record->total_duration_s) return '-';
+                                $minutes = round($record->total_duration_s / 60);
+                                if ($minutes < 60) return $minutes . ' menit';
+                                $hours = floor($minutes / 60);
+                                $min = $minutes % 60;
+                                return "{$hours} jam {$min} menit";
+                            })
+                            ->icon('heroicon-o-clock'),
+                        TextEntry::make('generated_at')
+                            ->label('Rute Terakhir Dibuat')
+                            ->dateTime('d M Y H:i')
+                            ->icon('heroicon-o-arrow-path'),
+                    ])->columnSpan(1),
+
+                Section::make('Catatan (Notice)')
+                    ->schema([
+                        TextEntry::make('notice')
+                            ->label('')
+                            ->placeholder('Tidak ada catatan khusus.')
+                            ->markdown(),
+                    ])->columnSpan(1),
+            ]),
 
             Section::make('Map & Rute')
                 ->schema([
                     ViewEntry::make('map')
-                    ->label('')
-                    ->state(fn ($record) => $record) // kirim Trip record
-                    ->view('filament.components.trip-map'),
+                        ->label('')
+                        ->state(fn($record) => $record)
+                        ->view('filament.components.trip-map'),
                 ]),
         ]);
     }

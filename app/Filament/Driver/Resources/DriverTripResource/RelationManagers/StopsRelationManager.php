@@ -26,13 +26,13 @@ class StopsRelationManager extends RelationManager
                     'pending' => 'pending',
                     'arrived' => 'arrived',
                     'done' => 'done',
-                    'skipped' => 'skipped',
+                    'skipped' => 'reject',
                 ])
                 ->required()
                 ->live(),
 
             Forms\Components\Textarea::make('skip_reason')
-                ->label('Alasan skip')
+                ->label('Alasan reject')
                 ->rows(3)
                 ->visible(fn(Forms\Get $get) => $get('status') === 'skipped')
                 ->required(fn(Forms\Get $get) => $get('status') === 'skipped'),
@@ -93,10 +93,10 @@ class StopsRelationManager extends RelationManager
                             $reason = trim((string) ($record->skip_reason ?? ''));
                             if ($reason !== '') {
                                 $short = Str::limit($reason, 18); // biar gak kepanjangan di tabel
-                                return "Skipped {$skip} — {$short}";
+                                return "Rejected {$skip} — {$short}";
                             }
 
-                            return "Skipped {$skip}";
+                            return "Rejected {$skip}";
                         }
 
                         if ($arr) {
@@ -115,7 +115,7 @@ class StopsRelationManager extends RelationManager
                     ->tooltip(function ($record) {
                         // tooltip khusus skip biar alasan lengkap keliatan
                         if ($record->skipped_at) {
-                            $t = 'Skipped: ' . Carbon::parse($record->skipped_at)->format('d M Y H:i');
+                            $t = 'Rejected: ' . Carbon::parse($record->skipped_at)->format('d M Y H:i');
                             if (!empty($record->skip_reason)) {
                                 $t .= "\nAlasan: " . $record->skip_reason;
                             }
@@ -154,7 +154,7 @@ class StopsRelationManager extends RelationManager
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('skip_reason')
-                    ->label('Alasan')
+                    ->label('Alasan Reject')
                     ->limit(30)
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
