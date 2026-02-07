@@ -40,14 +40,17 @@ class DriverTripResource extends Resource
             Forms\Components\Hidden::make('start_lng')
                 ->default(config('delivery.warehouse_lng')),
     
-            Forms\Components\Select::make('store_ids')
-                ->label('Toko dalam trip')
+            Forms\Components\Select::make('gi_input')
+                ->label('Pilih Nomor GI')
                 ->multiple()
                 ->searchable()
                 ->preload()
-                ->options(\App\Models\Store::query()->pluck('name', 'id'))
+                ->options(function () {
+                    return \App\Models\GoodsIssue::where('status', 'open')
+                        ->pluck('gi_number', 'gi_number');
+                })
                 ->required()
-                ->helperText('Tidak boleh pilih toko yang sama dalam 1 trip.'),
+                ->helperText('Pilih satu atau lebih GI yang tersedia.'),
     
             Forms\Components\Textarea::make('notice')
                 ->label('Catatan Driver')

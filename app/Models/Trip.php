@@ -10,8 +10,10 @@ class Trip extends Model
 {
     protected $fillable = [
         'driver_id',
+        'gi_number',
         'start_date',
         'start_time',
+        'start_address',
         'start_lat',
         'start_lng',
         'status',
@@ -43,6 +45,10 @@ class Trip extends Model
     public function stops(): HasMany
     {
         return $this->hasMany(TripStop::class);
-        
+    }
+
+    public function invoices(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(TripInvoice::class, TripStop::class);
     }
 }

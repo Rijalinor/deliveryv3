@@ -5,42 +5,44 @@ namespace App\Filament\Driver\Resources\DriverTripResource\Pages;
 use App\Filament\Driver\Resources\DriverTripResource;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
+use App\Services\TripAssignmentService;
 use Illuminate\Support\Facades\Auth;
-use App\Models\TripStop;
 
 class CreateDriverTrip extends CreateRecord
 {
     protected static string $resource = DriverTripResource::class;
 
-    protected array $storeIds = [];
-
-    protected function mutateFormDataBeforeCreate(array $data): array
+    protected function handleRecordCreation(array $data): Model
     {
-        $state = $this->form->getState();
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
+            // 1. Extract GI Numbers
+            $giInput = $data['gi_input'] ?? [];
+            unset($data['gi_input']);
 
-        $this->storeIds = $state['store_ids'] ?? [];
-    
-        $data['driver_id'] = Auth::id();
-        $data['status'] = 'planned';
-    
-        return $data;
+            // 2. Prepare Trip Data
+            $data['driver_id'] = Auth::id();
+            $data['status'] = 'planned';
+            $data['gi_number'] = is_array($giInput) ? implode(', ', $giInput) : (string)$giInput;
+
+            // 3. Create Trip
+            $trip = static::getModel()::create($data);
+
+            // 4. Process GIs (Generate Stops)
+            if (!empty($giInput)) {
+                $service = new TripAssignmentService();
+                $giNumbers = is_array($giInput) ? $giInput : explode(',', (string)$giInput);
+                
+                // This might throw Exception, which will rollback transaction
+                $service->processGiBasedTrip($trip, $giNumbers);
+            }
+
+            return $trip;
+        });
     }
 
-    protected function afterCreate(): void
+    protected function getRedirectUrl(): string
     {
-        $trip = $this->record;
-
-        $storeIds = collect($this->storeIds ?? [])
-            ->unique()
-            ->values()
-            ->all();
-
-        foreach ($storeIds as $storeId) {
-            TripStop::create([
-                'trip_id' => $trip->id,
-                'store_id' => $storeId,
-                'status' => 'pending',
-            ]);
-        }
+        return $this->getResource()::getUrl('index');
     }
 }

@@ -58,13 +58,12 @@ class TripResource extends Resource
                     ->required(),
 
                 Forms\Components\Select::make('status')
-                    ->options([
-                        'planned' => 'planned',
-                        'on_going' => 'on_going',
-                        'done' => 'done',
-                        'cancelled' => 'cancelled',
-                    ])
-                    ->default('planned')
+                            ->options([
+                                'planned' => 'planned',
+                                'on_going' => 'on_going',
+                                'completed' => 'completed',
+                                'failed' => 'failed',
+                            ])               ->default('planned')
                     ->required(),
             ])->columns(3),
 
@@ -126,6 +125,7 @@ class TripResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
+                        'open' => 'info',
                         'planned' => 'gray',
                         'on_going' => 'warning',
                         'done' => 'success',

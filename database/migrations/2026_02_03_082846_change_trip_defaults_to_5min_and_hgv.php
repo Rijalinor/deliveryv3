@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('trips', function (Blueprint $table) {
             $table->unsignedSmallInteger('service_minutes')->default(5)->change();
-            $table->string('ors_profile')->default('driving-hgv')->change();
+            $table->string('ors_profile')->default('driving-hgv')->nullable()->change();
         });
     }
 

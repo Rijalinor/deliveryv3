@@ -173,7 +173,14 @@ $mapId = 'trip-map-' . $trip->id;
 
         // Polyline ORS (GeoJSON)
         if (geojson && geojson.type) {
-            const routeLayer = L.geoJSON(geojson).addTo(map);
+            console.log('Trip GeoJSON found:', geojson);
+            const routeLayer = L.geoJSON(geojson, {
+                style: {
+                    color: '#ff0000', // RED
+                    weight: 5,
+                    opacity: 0.7
+                }
+            }).addTo(map);
             try {
                 const rb = routeLayer.getBounds();
                 if (rb && rb.isValid()) bounds.extend(rb);
