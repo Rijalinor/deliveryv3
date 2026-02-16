@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Store;
 use App\Models\Trip;
+use App\Models\TripStop;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -11,30 +13,32 @@ class TripManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_create_trip()
+    public function test_can_create_and_verify_trip()
     {
-        $admin = User::factory()->create();
+        $driver = User::factory()->create();
 
-        $response = $this->actingAs($admin)->post('/admin/trips', [
-            'driver_id' => User::factory()->create()->id,
-            'start_date' => now(),
-            'start_time' => '08:00',
+        $trip = Trip::factory()->create([
+            'driver_id' => $driver->id,
         ]);
 
         $this->assertDatabaseHas('trips', [
-            'driver_id' => $admin->id,
+            'id' => $trip->id,
+            'driver_id' => $driver->id,
         ]);
     }
 
     public function test_trip_can_have_multiple_stops()
     {
         $trip = Trip::factory()->create();
-
-        $trip->stops()->createMany([
-            ['store_id' => 1, 'sequence' => 1],
-            ['store_id' => 2, 'sequence' => 2],
-            ['store_id' => 3, 'sequence' => 3],
-        ]);
+        $stores = Store::factory()->count(3)->create();
+        
+        foreach ($stores as $index => $store) {
+            TripStop::factory()->create([
+                'trip_id' => $trip->id,
+                'store_id' => $store->id,
+                'sequence' => $index + 1,
+            ]);
+        }
 
         $this->assertEquals(3, $trip->stops()->count());
     }

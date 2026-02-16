@@ -19,6 +19,7 @@ class TripRouteGeneratorTest extends TestCase
     public function test_generate_updates_sequences_eta_and_route(): void
     {
         $trip = $this->makeTrip();
+        $trip->update(['service_minutes' => 0, 'traffic_factor' => 1.0]);
 
         $storeA = $this->makeStore('Toko A', 1.000001, 101.000001);
         $storeB = $this->makeStore('Toko B', 1.000002, 101.000002);
@@ -55,9 +56,14 @@ class TripRouteGeneratorTest extends TestCase
             ->once()
             ->andReturn([
                 'durations' => [
-                    [0, 600, 1200],
-                    [600, 0, 600],
-                    [1200, 600, 0],
+                    [0, 1000, 2000],
+                    [1000, 0, 1000],
+                    [345, 1000, 0], // Total duration: 1000 + 1000 + 345 = 2345
+                ],
+                'distances' => [
+                    [0, 500, 1000],
+                    [500, 0, 500],
+                    [234, 500, 0], // Total distance: 500 + 500 + 234 = 1234
                 ],
             ]);
 

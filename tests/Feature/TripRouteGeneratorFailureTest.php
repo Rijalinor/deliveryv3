@@ -39,7 +39,7 @@ class TripRouteGeneratorFailureTest extends TestCase
         $generator = new TripRouteGenerator($ors);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('ORS optimization tidak mengembalikan steps.');
+        $this->expectExceptionMessage('ORS optimization gagal menentukan rute.');
 
         $generator->generate($trip->fresh());
     }
@@ -80,12 +80,13 @@ class TripRouteGeneratorFailureTest extends TestCase
             ->once()
             ->andReturn([
                 'durations' => [],
+                'distances' => [],
             ]);
 
         $generator = new TripRouteGenerator($ors);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('ORS matrix tidak mengembalikan durations.');
+        $this->expectExceptionMessage('Gagal mengambil data matrix (durasi/jarak).');
 
         $generator->generate($trip->fresh());
     }
