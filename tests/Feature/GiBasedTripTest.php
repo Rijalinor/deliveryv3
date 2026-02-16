@@ -26,6 +26,25 @@ class GiBasedTripTest extends TestCase
 
     public function test_driver_can_create_trip_using_multiple_gis()
     {
+        // Mock ORS Service globally for this test
+        $this->mock(\App\Services\OrsService::class, function ($mock) {
+            $mock->shouldReceive('optimize')->andReturn([
+                'routes' => [['distance' => 100, 'duration' => 200, 'steps' => [
+                    ['type' => 'start'],
+                    ['job' => 1, 'arrival' => 1000, 'service' => 0],
+                    ['job' => 2, 'arrival' => 2000, 'service' => 0],
+                ]]],
+            ]);
+            $mock->shouldReceive('matrix')->andReturn([
+                'durations' => [[0, 100], [100, 0]],
+                'distances' => [[0, 1000], [1000, 0]],
+            ]);
+            $mock->shouldReceive('directions')->andReturn([
+                'type' => 'FeatureCollection',
+                'features' => [],
+            ]);
+        });
+
         // 1. Setup Data
         $driver = User::factory()->create(['name' => 'Driver Budi']);
         $this->actingAs($driver);
