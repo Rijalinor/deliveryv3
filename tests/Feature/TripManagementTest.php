@@ -31,7 +31,7 @@ class TripManagementTest extends TestCase
     {
         $trip = Trip::factory()->create();
         $stores = Store::factory()->count(3)->create();
-        
+
         foreach ($stores as $index => $store) {
             TripStop::factory()->create([
                 'trip_id' => $trip->id,
