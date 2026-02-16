@@ -27,10 +27,12 @@ class OrsService
 
         $url = 'https://api.openrouteservice.org/optimization';
 
+        $profile = config('delivery.ors_profile', 'driving-car');
+
         $payload = [
             'vehicles' => [[
                 'id' => 1,
-                'profile' => 'driving-car',
+                'profile' => $profile,
                 'start' => $start,
                 'end' => $start,
                 'time_window' => [$startTimeSec, 24 * 3600 - 1],
@@ -61,7 +63,7 @@ class OrsService
             throw new \RuntimeException('ORS_API_KEY kosong. Cek .env dan config/services.php');
         }
 
-        $profile = config('ors.profile', 'driving-car');
+        $profile = config('delivery.ors_profile', 'driving-car');
         $url = "https://api.openrouteservice.org/v2/matrix/{$profile}";
 
         $payload = [

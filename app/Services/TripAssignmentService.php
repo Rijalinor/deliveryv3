@@ -11,8 +11,8 @@ class TripAssignmentService
     public function processGiBasedTrip(Trip $trip, array $giNumbers): void
     {
         DB::transaction(function () use ($trip, $giNumbers) {
-            $existingStops = []; // store_id => stop_id
-            $sequence = 1;
+            $existingStopsCount = $trip->stops()->count();
+            $sequence = $existingStopsCount + 1;
 
             foreach ($giNumbers as $giNumber) {
                 $gi = \App\Models\GoodsIssue::where('gi_number', $giNumber)
@@ -35,7 +35,7 @@ class TripAssignmentService
 
                 // Group items by store to create stops
                 $groupedItems = $gi->items->groupBy(function ($item) {
-                    return $item->store_name; // Group by name primarily if ID missing
+                    return $item->store_id ?: trim($item->store_name);
                 });
 
                 foreach ($groupedItems as $storeName => $items) {

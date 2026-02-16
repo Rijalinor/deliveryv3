@@ -28,25 +28,19 @@ class DriverPanelProvider extends PanelProvider
             ->path('driver')
             ->login()
             
-            
-             ->colors([
-                'primary' => [
-                    50  => '#ecfdf5',
-                    100 => '#d1fae5',
-                    200 => '#a7f3d0',
-                    300 => '#6ee7b7',
-                    400 => '#34d399',
-                    500 => '#10b981', // WARNA UTAMA DRIVER
-                    600 => '#059669',
-                    700 => '#047857',
-                    800 => '#065f46',
-                    900 => '#064e3b',
-                ],
+                        ->colors([
+                'primary' => Color::Emerald,
+                'gray' => Color::Slate,
+                'success' => Color::Green,
+                'warning' => Color::Amber,
+                'danger' => Color::Red,
             ])
 
-            ->brandName('Delivery App') // nama aplikasi
-            ->brandLogo('/images/logo-jalldev.png')
-            ->brandLogoHeight('4rem')
+            ->brandName('Driver Panel')
+            ->favicon('/images/favicon.png')
+            ->darkMode(true)
+            ->darkModeBrandLogo('/images/logo-dark.svg')
+            ->sidebarCollapsibleOnDesktop()
             
             ->discoverResources(in: app_path('Filament/Driver/Resources'), for: 'App\\Filament\\Driver\\Resources')
             ->discoverPages(in: app_path('Filament/Driver/Pages'), for: 'App\\Filament\\Driver\\Pages')

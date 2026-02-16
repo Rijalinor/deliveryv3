@@ -44,6 +44,11 @@ class TripStop extends Model
         return $this->belongsTo(\App\Models\Store::class);
     }
 
+    public function invoices()
+    {
+        return $this->hasMany(\App\Models\TripInvoice::class);
+    }
+
     public function arrivedToFinishMinutes(): ?int
     {
         if (! $this->arrived_at) return null;

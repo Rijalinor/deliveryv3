@@ -59,9 +59,22 @@ class OrsGeocodingService
         $json = $resp->json();
         $feature = $json['features'][0] ?? null;
 
-        $label = $feature['properties']['label'] ?? null;
+        if (!$feature) {
+            return ['ok' => false, 'message' => 'No features found', 'data' => null];
+        }
 
-        return ['ok' => true, 'message' => null, 'data' => ['label' => $label]];
+        $props = $feature['properties'] ?? [];
+        $geom  = $feature['geometry']['coordinates'] ?? [null, null];
+
+        return [
+            'ok' => true,
+            'message' => null,
+            'data' => [
+                'label' => $props['label'] ?? null,
+                'lat' => isset($geom[1]) ? (float)$geom[1] : null,
+                'lng' => isset($geom[0]) ? (float)$geom[0] : null,
+            ]
+        ];
     }
 }
 

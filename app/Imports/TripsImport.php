@@ -44,7 +44,7 @@ class TripsImport implements ToCollection, WithHeadingRow
                 );
 
                 foreach ($items as $item) {
-                    $outletName = $item['outlet'] ?? $item['outlet_name'] ?? $item['customer'] ?? 'Unknown';
+                    $outletName = trim($item['outlet'] ?? $item['outlet_name'] ?? $item['customer'] ?? 'Unknown');
                     $pfi = $item['pfi'] ?? $item['pfi_no'] ?? $item['invoice'] ?? 'N/A';
                     $store = Store::where('name', $outletName)->first();
 

@@ -21,3 +21,14 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Debug files
+debug_*.php
+compare_*.php
+analyze_*.php
+regenerate_*.php
+check_*.php
+dump_*.php
+reset_and_randomize.php
+*.json.bak
+ors_optimize_response.json

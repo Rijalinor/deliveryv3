@@ -10,52 +10,74 @@
     $percent = $total > 0 ? ($done / $total) * 100 : 0;
     @endphp
 
-    {{-- Simple Header --}}
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 mb-6 shadow-sm">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h2 class="text-lg font-bold">Trip #{{ $trip->id }}</h2>
-                <p class="text-xs text-gray-500 uppercase font-semibold">Driver Delivery Mode</p>
-            </div>
-            <div class="text-right">
-                <x-filament::badge :color="$badgeColor" size="sm">
-                    {{ $badgeText }}
-                </x-filament::badge>
-                <div id="connection-indicator" class="mt-1 flex items-center justify-end gap-1 text-[10px] text-success-600">
-                    <span class="w-1.5 h-1.5 rounded-full bg-success-500 animate-pulse"></span>
-                    Online
+    {{-- Enhanced Header --}}
+    <div class="relative overflow-hidden bg-gradient-to-br from-primary-500 to-primary-700 dark:from-primary-600 dark:to-primary-900 rounded-2xl p-6 mb-6 shadow-xl">
+        <!-- Decorative Background Pattern -->
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 24px 24px;"></div>
+        </div>
+        
+        <div class="relative z-10">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                        <x-heroicon-o-truck class="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Trip #{{ $trip->id }}</h2>
+                        <p class="text-xs text-primary-100 uppercase font-semibold tracking-wide">Driver Delivery Mode</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full">
+                        <span class="text-sm font-bold text-white">{{ $badgeText }}</span>
+                    </div>
+                    <div id="connection-indicator" class="mt-2 flex items-center justify-end gap-1.5 text-xs text-white/80">
+                        <span class="w-2 h-2 rounded-full bg-success-400 animate-pulse shadow-lg shadow-success-500/50"></span>
+                        Online
+                    </div>
                 </div>
             </div>
-        </div>
 
-        {{-- Simple Progress --}}
-        <div class="space-y-1">
-            <div class="flex justify-between text-xs font-medium text-gray-600">
-                <span>{{ $progress }}</span>
-                <span>{{ round($percent) }}%</span>
-            </div>
-            <div class="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                <div class="h-full bg-primary-600 transition-all duration-500" style="width: {{ $percent }}%"></div>
+            {{-- Enhanced Progress Bar --}}
+            <div class="space-y-2">
+                <div class="flex justify-between text-sm font-semibold text-white/90">
+                    <span>{{ $progress }}</span>
+                    <span>{{ round($percent) }}%</span>
+                </div>
+                <div class="relative w-full h-3 bg-white/20 backdrop-blur-sm rounded-full overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-r from-success-400 to-success-500 transition-all duration-500 rounded-full shadow-lg" style="width: {{ $percent }}%"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-transparent to-white/20"></div>
+                </div>
             </div>
         </div>
     </div>
 
     @if(! $active)
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-8 text-center shadow-sm">
-        <div class="mb-4 text-success-600 flex justify-center">
-            <x-heroicon-o-check-circle class="w-16 h-16" />
-        </div>
-        <h3 class="text-xl font-bold mb-2">Trip Selesai!</h3>
-        <p class="text-gray-500 mb-6">Semua pengiriman telah berhasil diselesaikan.</p>
+    <div class="relative overflow-hidden bg-gradient-to-br from-success-50 to-success-100 dark:from-success-950 dark:to-gray-900 border-2 border-success-200 dark:border-success-800 rounded-2xl p-8 text-center shadow-xl">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-success-200/30 dark:bg-success-900/20 rounded-full -mr-32 -mt-32"></div>
+        <div class="absolute bottom-0 left-0 w-48 h-48 bg-success-300/20 dark:bg-success-800/10 rounded-full -ml-24 -mb-24"></div>
         
-        <div class="flex flex-col gap-2">
-            <x-filament::button color="success" wire:click="finishTrip" size="lg">
-                Selesaikan Trip Ini
-            </x-filament::button>
-            <x-filament::button color="gray" tag="a" variant="link"
-                href="{{ \App\Filament\Driver\Resources\DriverTripResource::getUrl('index') }}">
-                Kembali ke Daftar
-            </x-filament::button>
+        <div class="relative z-10">
+            <div class="mb-6 flex justify-center">
+                <div class="p-4 bg-success-100 dark:bg-success-900/50 rounded-full">
+                    <x-heroicon-o-check-circle class="w-20 h-20 text-success-600 dark:text-success-400" />
+                </div>
+            </div>
+            <h3 class="text-3xl font-bold mb-3 text-gray-900 dark:text-white">Trip Selesai!</h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-8 text-lg">Semua pengiriman telah berhasil diselesaikan.</p>
+            
+            <div class="flex flex-col gap-3 max-w-sm mx-auto">
+                <x-filament::button color="success" wire:click="finishTrip" size="xl" class="shadow-lg hover:shadow-xl transition-shadow">
+                    <x-heroicon-m-check class="w-5 h-5 mr-2" />
+                    Selesaikan Trip Ini
+                </x-filament::button>
+                <x-filament::button color="gray" tag="a" variant="outlined"
+                    href="{{ \App\Filament\Driver\Resources\DriverTripResource::getUrl('index') }}">
+                    <x-heroicon-m-arrow-left class="w-4 h-4 mr-2" />
+                    Kembali ke Daftar
+                </x-filament::button>
+            </div>
         </div>
     </div>
     @else
@@ -65,48 +87,57 @@
             @include('filament.driver.trip-map-single', ['trip' => $trip, 'stop' => $active])
         </div>
 
-        {{-- Active Stop --}}
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="bg-primary-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">
+        {{-- Enhanced Active Stop Card --}}
+        <div class="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-xl">
+            <div class="flex items-start gap-4 mb-5">
+                <div class="flex-shrink-0 bg-gradient-to-br from-primary-500 to-primary-600 text-white w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg">
                     {{ $active->sequence }}
                 </div>
-                <div>
-                    <h3 class="font-bold text-lg leading-tight">{{ $active->store->name }}</h3>
-                    <p class="text-sm text-gray-500">{{ $active->store->address }}</p>
+                <div class="flex-1">
+                    <h3 class="font-bold text-xl leading-tight text-gray-900 dark:text-white mb-1">{{ $active->store->name }}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                        <x-heroicon-m-map-pin class="w-4 h-4" />
+                        {{ $active->store->address }}
+                    </p>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3 mb-6">
-                <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
-                    <span class="block text-[10px] text-gray-400 uppercase font-bold">ETA</span>
-                    <span class="font-bold text-gray-900 dark:text-white">{{ optional($active->eta_at)->format('H:i') ?? '--:--' }}</span>
+                <div class="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <div class="flex items-center gap-2 mb-1">
+                        <x-heroicon-m-clock class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <span class="block text-xs text-blue-600 dark:text-blue-400 uppercase font-bold">ETA</span>
+                    </div>
+                    <span class="font-bold text-lg text-blue-900 dark:text-blue-100">{{ optional($active->eta_at)->format('H:i') ?? '--:--' }}</span>
                 </div>
-                <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
-                    <span class="block text-[10px] text-gray-400 uppercase font-bold">Jam Tutup</span>
-                    <span class="font-bold text-gray-900 dark:text-white">{{ optional($active->close_at)->format('H:i') ?? '--:--' }}</span>
+                <div class="p-4 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 rounded-xl border border-amber-200 dark:border-amber-800">
+                    <div class="flex items-center gap-2 mb-1">
+                        <x-heroicon-m-clock class="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        <span class="block text-xs text-amber-600 dark:text-amber-400 uppercase font-bold">Jam Tutup</span>
+                    </div>
+                    <span class="font-bold text-lg text-amber-900 dark:text-amber-100">{{ optional($active->close_at)->format('H:i') ?? '--:--' }}</span>
                 </div>
             </div>
 
             {{-- Primary Actions --}}
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-4">
                 <x-filament::button
-                    size="lg"
+                    size="xl"
                     color="gray"
                     tag="a"
                     :href="$this->gmapsUrl()"
                     target="_blank"
                     icon="heroicon-m-map"
-                    class="w-full">
+                    class="w-full shadow-lg hover:shadow-xl transition-shadow">
                     Navigasi
                 </x-filament::button>
 
                 @if($active->status === 'pending')
-                    <x-filament::button size="lg" color="warning" wire:click="markArrived" icon="heroicon-m-check-circle" class="w-full">
+                    <x-filament::button size="xl" color="warning" wire:click="markArrived" icon="heroicon-m-check-circle" class="w-full shadow-lg hover:shadow-xl transition-shadow">
                         Arrived
                     </x-filament::button>
                 @else
-                    <div class="flex items-center justify-center p-2 bg-success-50 dark:bg-success-950 text-success-700 dark:text-success-400 rounded-lg border border-success-200 dark:border-success-800 font-bold text-sm">
+                    <div class="flex items-center justify-center p-4 bg-gradient-to-r from-success-50 to-success-100 dark:from-success-950 dark:to-success-900 text-success-700 dark:text-success-300 rounded-xl border-2 border-success-200 dark:border-success-800 font-bold text-sm shadow-inner">
                         <x-heroicon-m-check-circle class="w-5 h-5 mr-2" />
                         Sudah di Lokasi
                     </div>
@@ -114,7 +145,8 @@
             </div>
 
             {{-- Secondary Actions --}}
-            <x-filament::button variant="link" color="danger" wire:click="markRejected" class="w-full text-xs uppercase font-bold">
+            <x-filament::button variant="outlined" color="danger" wire:click="markRejected" class="w-full text-sm uppercase font-bold">
+                <x-heroicon-m-x-circle class="w-4 h-4 mr-2" />
                 Gagal / Reject
             </x-filament::button>
         </div>

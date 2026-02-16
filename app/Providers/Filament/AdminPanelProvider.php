@@ -28,23 +28,24 @@ class AdminPanelProvider extends PanelProvider
             ->login()
 
             ->colors([
-                'primary' => [
-                    50 => '#eef2ff',
-                    100 => '#e0e7ff',
-                    200 => '#c7d2fe',
-                    300 => '#a5b4fc',
-                    400 => '#818cf8',
-                    500 => '#6366f1', // warna utama
-                    600 => '#4f46e5',
-                    700 => '#4338ca',
-                    800 => '#3730a3',
-                    900 => '#312e81',
-                ],
+                'primary' => Color::Blue,
+                'gray' => Color::Slate,
+                'success' => Color::Green,
+                'warning' => Color::Amber,
+                'danger' => Color::Red,
             ])
 
-            ->brandName('Delivery App') // nama aplikasi
-            ->brandLogo('/images/logo-jalldev.png')
-            ->brandLogoHeight('4rem')
+            ->brandName('DeliveryV3')
+            ->favicon('/images/favicon.png')
+            ->darkMode(true)
+            ->darkModeBrandLogo('/images/logo-dark.svg')
+            ->sidebarCollapsibleOnDesktop()
+            ->sidebarWidth('16rem')
+            ->navigationGroups([
+                'Operations',
+                'Master Data',
+                'Reports',
+            ])
 
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -53,8 +54,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                // Dashboard widgets will be registered in Dashboard page
             ])
                 
             ->middleware([

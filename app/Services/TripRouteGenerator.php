@@ -41,38 +41,65 @@ class TripRouteGenerator
         $startTimeSec = $this->timeToSec($startTime);
         $startCoord = [(float) $trip->start_lng, (float) $trip->start_lat];
 
-        // 1. Optimization (Vrp / TSP) - Mencari urutan terbaik
+        // 1. Optimization (Vrp / TSP) - Mencari urutan terbaik (Fokus Jarak/Geografis)
         $jobs = [];
         foreach ($stops as $stop) {
-            $closeSec = $this->timeToSec($stop->store->close_time ?? '23:59:00');
-            $latestArrival = max($startTimeSec, $closeSec - $bufferSec);
-
             $jobs[] = [
                 'id' => (int) $stop->id,
                 'location' => [(float) $stop->store->lng, (float) $stop->store->lat],
                 'service' => $serviceSec,
-                'time_windows' => [[$startTimeSec, $latestArrival]],
+                // Kita hapus time_windows agar ORS bebas mencari urutan terpendek secara geografis
             ];
         }
 
         $optimizationResult = $this->ors->optimize($startCoord, $jobs, $startTimeSec);
         $steps = data_get($optimizationResult, 'routes.0.steps', []);
+        $unassigned = data_get($optimizationResult, 'unassigned', []);
 
-        if (empty($steps)) {
-            throw new \RuntimeException('ORS optimization gagal menentukan urutan.');
+        if (empty($steps) && empty($unassigned)) {
+            throw new \RuntimeException('ORS optimization gagal menentukan rute.');
         }
 
         // Mapping urutan (sequence) berdasarkan hasil optimization
+        $assignedStopIds = [];
         $sequence = 1;
-        foreach ($steps as $step) {
-            $jobId = data_get($step, 'job');
-            if (!$jobId) continue;
 
-            $stop = $stops->firstWhere('id', (int) $jobId);
-            if ($stop) {
-                $stop->update(['sequence' => $sequence++]);
+        \Illuminate\Support\Facades\DB::transaction(function() use ($steps, $unassigned, $stops, &$sequence, &$assignedStopIds) {
+            // 1. Assign sequence untuk yang sukses di-optimize
+            foreach ($steps as $step) {
+                $jobId = data_get($step, 'job');
+                if (!$jobId) continue;
+
+                $stop = $stops->firstWhere('id', (int) $jobId);
+                if ($stop) {
+                    // Use direct DB update to ensure it's persisted
+                    \Illuminate\Support\Facades\DB::table('trip_stops')
+                        ->where('id', $stop->id)
+                        ->update([
+                            'sequence' => $sequence++,
+                            'updated_at' => now(),
+                        ]);
+                    $assignedStopIds[] = $stop->id;
+                }
             }
-        }
+
+            // 2. Handle unassigned (jika ada yang tidak bisa dijangkau/unreachable)
+            // Tetap beri sequence agar muncul di daftar trip, tapi di urutan terakhir
+            foreach ($unassigned as $u) {
+                $jobId = data_get($u, 'id');
+                $stop = $stops->firstWhere('id', (int) $jobId);
+                if ($stop && !in_array($stop->id, $assignedStopIds)) {
+                    \Illuminate\Support\Facades\DB::table('trip_stops')
+                        ->where('id', $stop->id)
+                        ->update([
+                            'sequence' => $sequence++,
+                            'updated_at' => now(),
+                        ]);
+                    $assignedStopIds[] = $stop->id;
+                    \Illuminate\Support\Facades\Log::warning("Stop #{$stop->id} ({$stop->store->name}) ditandai unassigned oleh ORS. Mungkin jalan tidak bisa dilalui kendaraan.");
+                }
+            }
+        });
 
         // 2. High-Precision Matrix (untuk ETA dan Jarak Akurat antar segmen)
         $orderedStops = $trip->stops()
@@ -118,6 +145,12 @@ class TripRouteGenerator
             $currentSec = $arrivalSec + $serviceSec;
         }
 
+        // Hitung juga jalur pulang ke gudang agar total distance/duration akurat
+        $lastToWarehouseDuration = (int) (($durations[count($orderedStops)][0] ?? 0) * $trafficFactor);
+        $lastToWarehouseDistance = (float) ($distances[count($orderedStops)][0] ?? 0);
+        $totalDistance += $lastToWarehouseDistance;
+        $currentSec += $lastToWarehouseDuration;
+
         // 3. Final Directions GeoJSON (untuk tampilan Map)
         $coords = [$startCoord];
         foreach ($orderedStops as $s) {
@@ -125,7 +158,7 @@ class TripRouteGenerator
         }
         $coords[] = $startCoord; // Kembali ke gudang
 
-        $geojson = $this->ors->directions($coords, $trip->ors_profile ?? 'driving-car');
+        $geojson = $this->ors->directions($coords, $trip->ors_profile ?? config('delivery.ors_profile', 'driving-car'));
         
         $trip->update([
             'generated_at' => now(),
