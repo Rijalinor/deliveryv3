@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\Trip;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class TripManagementTest extends TestCase
 {
@@ -29,7 +29,7 @@ class TripManagementTest extends TestCase
     public function test_trip_can_have_multiple_stops()
     {
         $trip = Trip::factory()->create();
-        
+
         $trip->stops()->createMany([
             ['store_id' => 1, 'sequence' => 1],
             ['store_id' => 2, 'sequence' => 2],

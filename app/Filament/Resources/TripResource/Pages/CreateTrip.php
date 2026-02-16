@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\TripResource\Pages;
 
 use App\Filament\Resources\TripResource;
-use Filament\Actions;
 use App\Models\TripStop;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -13,12 +12,13 @@ class CreateTrip extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-            // store_ids bukan kolom trips
-            $this->storeIds = $data['store_ids'] ?? [];
-            unset($data['store_ids']);
+        // store_ids bukan kolom trips
+        $this->storeIds = $data['store_ids'] ?? [];
+        unset($data['store_ids']);
 
-            return $data;
+        return $data;
     }
+
     protected function afterCreate(): void
     {
         $trip = $this->record;

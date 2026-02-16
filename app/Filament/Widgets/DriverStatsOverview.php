@@ -6,7 +6,6 @@ use App\Models\Trip;
 use App\Models\TripStop;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Carbon;
 
 class DriverStatsOverview extends BaseWidget
 {
@@ -25,8 +24,8 @@ class DriverStatsOverview extends BaseWidget
             ->where('is_late', false)
             ->count();
 
-        $onTimeRate = $totalDoneStops > 0 
-            ? round(($onTimeStops / $totalDoneStops) * 100, 1) 
+        $onTimeRate = $totalDoneStops > 0
+            ? round(($onTimeStops / $totalDoneStops) * 100, 1)
             : 100;
 
         // 3. Avg Delivery Time (Arrived -> Done)
@@ -39,13 +38,13 @@ class DriverStatsOverview extends BaseWidget
                 ->description('Semua waktu')
                 ->descriptionIcon('heroicon-m-truck')
                 ->color('success'),
-            
-            Stat::make('On-Time Delivery Rate', $onTimeRate . '%')
-                ->description($onTimeStops . ' / ' . $totalDoneStops . ' stop tepat waktu')
+
+            Stat::make('On-Time Delivery Rate', $onTimeRate.'%')
+                ->description($onTimeStops.' / '.$totalDoneStops.' stop tepat waktu')
                 ->descriptionIcon('heroicon-m-clock')
                 ->color($onTimeRate >= 90 ? 'success' : ($onTimeRate >= 70 ? 'warning' : 'danger')),
 
-            Stat::make('Total Jarak Tempuh', $totalDistanceKm . ' km')
+            Stat::make('Total Jarak Tempuh', $totalDistanceKm.' km')
                 ->description('Akumulasi semua driver')
                 ->descriptionIcon('heroicon-m-map')
                 ->color('info'),

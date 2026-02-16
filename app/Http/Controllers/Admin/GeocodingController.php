@@ -14,6 +14,7 @@ class GeocodingController extends Controller
         if (mb_strlen($q) < 3) {
             return response()->json(['ok' => true, 'data' => []]);
         }
+
         return response()->json($svc->search($q));
     }
 
@@ -22,7 +23,7 @@ class GeocodingController extends Controller
         $lat = (float) $request->query('lat');
         $lng = (float) $request->query('lng');
 
-        if (!$lat || !$lng) {
+        if (! $lat || ! $lng) {
             return response()->json(['ok' => false, 'message' => 'lat/lng required']);
         }
 

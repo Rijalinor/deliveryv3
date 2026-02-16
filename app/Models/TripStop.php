@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TripStop extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'trip_id',
@@ -15,7 +16,7 @@ class TripStop extends Model
         'status',
         'sequence',
         'eta_at',
-        'close_at', 
+        'close_at',
         'is_late',
         'late_minutes',
         'skip_reason',
@@ -34,11 +35,12 @@ class TripStop extends Model
         'late_minutes' => 'integer',
         'sequence' => 'integer',
     ];
-    
+
     public function trip()
     {
         return $this->belongsTo(\App\Models\Trip::class);
     }
+
     public function store()
     {
         return $this->belongsTo(\App\Models\Store::class);
@@ -51,10 +53,14 @@ class TripStop extends Model
 
     public function arrivedToFinishMinutes(): ?int
     {
-        if (! $this->arrived_at) return null;
+        if (! $this->arrived_at) {
+            return null;
+        }
 
         $end = $this->done_at ?? $this->skipped_at;
-        if (! $end) return null;
+        if (! $end) {
+            return null;
+        }
 
         return $this->arrived_at->diffInMinutes($end);
     }

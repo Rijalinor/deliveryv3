@@ -18,7 +18,6 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-
 class DriverPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -27,8 +26,7 @@ class DriverPanelProvider extends PanelProvider
             ->id('driver')
             ->path('driver')
             ->login()
-            
-                        ->colors([
+            ->colors([
                 'primary' => Color::Emerald,
                 'gray' => Color::Slate,
                 'success' => Color::Green,
@@ -41,7 +39,7 @@ class DriverPanelProvider extends PanelProvider
             ->darkMode(true)
             ->darkModeBrandLogo('/images/logo-dark.svg')
             ->sidebarCollapsibleOnDesktop()
-            
+
             ->discoverResources(in: app_path('Filament/Driver/Resources'), for: 'App\\Filament\\Driver\\Resources')
             ->discoverPages(in: app_path('Filament/Driver/Pages'), for: 'App\\Filament\\Driver\\Pages')
             ->pages([
@@ -53,7 +51,6 @@ class DriverPanelProvider extends PanelProvider
                 Widgets\FilamentInfoWidget::class,
             ])
             ->authGuard('web')
-                
 
             ->middleware([
                 EncryptCookies::class,

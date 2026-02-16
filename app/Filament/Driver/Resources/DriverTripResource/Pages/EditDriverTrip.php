@@ -4,9 +4,8 @@ namespace App\Filament\Driver\Resources\DriverTripResource\Pages;
 
 use App\Filament\Driver\Resources\DriverTripResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
-
 use Filament\Notifications\Notification;
+use Filament\Resources\Pages\EditRecord;
 
 class EditDriverTrip extends EditRecord
 {
@@ -17,17 +16,17 @@ class EditDriverTrip extends EditRecord
         return [
             Actions\DeleteAction::make(),
             Actions\Action::make('startTrip')
-            ->label('Mulai Trip')
-            ->visible(fn () => $this->record->status === 'planned')
-            ->requiresConfirmation()
-            ->action(function () {
-                $this->record->update(['status' => 'on_going']);
+                ->label('Mulai Trip')
+                ->visible(fn () => $this->record->status === 'planned')
+                ->requiresConfirmation()
+                ->action(function () {
+                    $this->record->update(['status' => 'on_going']);
 
-                Notification::make()
-                    ->title('Trip dimulai')
-                    ->success()
-                    ->send();
-            }),
+                    Notification::make()
+                        ->title('Trip dimulai')
+                        ->success()
+                        ->send();
+                }),
         ];
     }
 }

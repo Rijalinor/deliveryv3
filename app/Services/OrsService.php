@@ -13,8 +13,8 @@ class OrsService
             ->timeout($timeout)
             ->withHeaders([
                 'Authorization' => $key,
-                'Accept'        => 'application/json',
-                'Content-Type'  => 'application/json',
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
             ]);
     }
 
@@ -48,7 +48,7 @@ class OrsService
 
         if (! $res->successful()) {
             $body = $res->json();
-            $msg  = data_get($body, 'error.message') ?? $res->body();
+            $msg = data_get($body, 'error.message') ?? $res->body();
             $code = data_get($body, 'error.code') ?? $res->status();
             throw new \RuntimeException("ORS error ({$code}): {$msg}");
         }
@@ -79,7 +79,7 @@ class OrsService
 
         if (! $res->successful()) {
             $body = $res->json();
-            $msg  = data_get($body, 'error.message') ?? $res->body();
+            $msg = data_get($body, 'error.message') ?? $res->body();
             $code = data_get($body, 'error.code') ?? $res->status();
             throw new \RuntimeException("ORS matrix error ({$code}): {$msg}");
         }
@@ -99,7 +99,7 @@ class OrsService
         $payload = [
             'coordinates' => $coordinates,
             'instructions' => false,
-            'radiuses' => array_fill(0, count($coordinates), 500), 
+            'radiuses' => array_fill(0, count($coordinates), 500),
         ];
 
         try {
@@ -118,7 +118,7 @@ class OrsService
 
         if (! $res->successful()) {
             $body = $res->json();
-            $msg  = data_get($body, 'error.message') ?? $res->body();
+            $msg = data_get($body, 'error.message') ?? $res->body();
             $code = data_get($body, 'error.code') ?? $res->status();
             throw new \RuntimeException("ORS error ({$code}): {$msg}");
         }

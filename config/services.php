@@ -37,6 +37,5 @@ return [
     'ors' => [
         'key' => env('ORS_API_KEY'),
     ],
-    
 
 ];

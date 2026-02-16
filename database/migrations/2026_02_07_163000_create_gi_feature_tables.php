@@ -29,10 +29,10 @@ return new class extends Migration
             $table->string('store_name')->nullable(); // Raw name from excel
             $table->text('address')->nullable();
             $table->decimal('amount', 15, 2)->default(0);
-            
+
             // Optional: Link to Store ID if resolved matched
             $table->foreignId('store_id')->nullable()->constrained('stores')->nullOnDelete();
-            
+
             $table->timestamps();
         });
 
@@ -48,7 +48,7 @@ return new class extends Migration
 
         // 4. Add gi_number to Trips
         Schema::table('trips', function (Blueprint $table) {
-            $table->string('gi_number')->nullable()->after('driver_id'); 
+            $table->string('gi_number')->nullable()->after('driver_id');
         });
     }
 

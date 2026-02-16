@@ -13,14 +13,14 @@ class OrsGeocodingService
         $apiKey = config('services.ors.key');
 
         $resp = Http::timeout(15)
-            ->get($this->baseUrl . '/search', [
+            ->get($this->baseUrl.'/search', [
                 'api_key' => $apiKey,
                 'text' => $text,
                 'size' => $size,
                 'boundary.country' => 'ID',
             ]);
 
-        if (!$resp->successful()) {
+        if (! $resp->successful()) {
             return ['ok' => false, 'message' => 'ORS geocode failed', 'data' => []];
         }
 
@@ -28,14 +28,15 @@ class OrsGeocodingService
 
         $items = collect($json['features'] ?? [])->map(function ($f) {
             $props = $f['properties'] ?? [];
-            $geom  = $f['geometry']['coordinates'] ?? [null, null]; // [lon, lat]
+            $geom = $f['geometry']['coordinates'] ?? [null, null]; // [lon, lat]
+
             return [
                 'label' => $props['label'] ?? ($props['name'] ?? 'Unknown'),
-                'lat' => isset($geom[1]) ? (float)$geom[1] : null,
-                'lng' => isset($geom[0]) ? (float)$geom[0] : null,
+                'lat' => isset($geom[1]) ? (float) $geom[1] : null,
+                'lng' => isset($geom[0]) ? (float) $geom[0] : null,
                 'raw' => $props,
             ];
-        })->filter(fn($i) => $i['lat'] && $i['lng'])->values()->all();
+        })->filter(fn ($i) => $i['lat'] && $i['lng'])->values()->all();
 
         return ['ok' => true, 'message' => null, 'data' => $items];
     }
@@ -45,36 +46,35 @@ class OrsGeocodingService
         $apiKey = config('services.ors.key');
 
         $resp = Http::timeout(15)
-            ->get($this->baseUrl . '/reverse', [
+            ->get($this->baseUrl.'/reverse', [
                 'api_key' => $apiKey,
                 'point.lat' => $lat,
                 'point.lon' => $lng,
                 'size' => 1,
             ]);
 
-        if (!$resp->successful()) {
+        if (! $resp->successful()) {
             return ['ok' => false, 'message' => 'ORS reverse failed', 'data' => null];
         }
 
         $json = $resp->json();
         $feature = $json['features'][0] ?? null;
 
-        if (!$feature) {
+        if (! $feature) {
             return ['ok' => false, 'message' => 'No features found', 'data' => null];
         }
 
         $props = $feature['properties'] ?? [];
-        $geom  = $feature['geometry']['coordinates'] ?? [null, null];
+        $geom = $feature['geometry']['coordinates'] ?? [null, null];
 
         return [
             'ok' => true,
             'message' => null,
             'data' => [
                 'label' => $props['label'] ?? null,
-                'lat' => isset($geom[1]) ? (float)$geom[1] : null,
-                'lng' => isset($geom[0]) ? (float)$geom[0] : null,
-            ]
+                'lat' => isset($geom[1]) ? (float) $geom[1] : null,
+                'lng' => isset($geom[0]) ? (float) $geom[0] : null,
+            ],
         ];
     }
 }
-

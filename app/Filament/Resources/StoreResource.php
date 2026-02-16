@@ -3,20 +3,15 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\StoreResource\Pages;
-use App\Filament\Resources\StoreResource\RelationManagers;
 use App\Models\Store;
-use Filament\Forms;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\ViewField;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\TimePicker;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\ViewField;
-use Filament\Forms\Components\Hidden;
 
 class StoreResource extends Resource
 {
@@ -47,15 +42,12 @@ class StoreResource extends Resource
                     ->dehydrated(false), // jangan disimpan sebagai field "location"
 
                 TextInput::make('lat')
-                    ->label('Latitude')        
+                    ->label('Latitude')
                     ->dehydrated(),
 
                 TextInput::make('lng')
                     ->label('Longitude')
                     ->dehydrated(),
-
-
-
 
             ])
             ->columns(2);
@@ -77,7 +69,7 @@ class StoreResource extends Resource
 
                 Tables\Columns\TextColumn::make('close_time')
                     ->label('Tutup')
-                    ->formatStateUsing(fn($state) => $state ? substr($state, 0, 5) : '23:59')
+                    ->formatStateUsing(fn ($state) => $state ? substr($state, 0, 5) : '23:59')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('lat')

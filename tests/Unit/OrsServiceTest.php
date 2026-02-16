@@ -15,7 +15,7 @@ class OrsServiceTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('ORS_API_KEY kosong');
 
-        (new OrsService())->optimize([0.0, 0.0], [], 0);
+        (new OrsService)->optimize([0.0, 0.0], [], 0);
     }
 
     public function test_optimize_returns_json_on_success(): void
@@ -32,7 +32,7 @@ class OrsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $result = (new OrsService())->optimize([1.0, 2.0], [], 0);
+        $result = (new OrsService)->optimize([1.0, 2.0], [], 0);
 
         $this->assertSame(100, $result['routes'][0]['distance']);
         $this->assertSame(200, $result['routes'][0]['duration']);
@@ -51,7 +51,7 @@ class OrsServiceTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('ORS error (123): bad request');
 
-        (new OrsService())->optimize([1.0, 2.0], [], 0);
+        (new OrsService)->optimize([1.0, 2.0], [], 0);
     }
 
     public function test_matrix_throws_on_error(): void
@@ -68,7 +68,7 @@ class OrsServiceTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('ORS matrix error (500): oops');
 
-        (new OrsService())->matrix([[1.0, 2.0], [3.0, 4.0]]);
+        (new OrsService)->matrix([[1.0, 2.0], [3.0, 4.0]]);
     }
 
     public function test_directions_returns_json_on_success(): void
@@ -82,7 +82,7 @@ class OrsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $result = (new OrsService())->directions([[1.0, 2.0], [3.0, 4.0]]);
+        $result = (new OrsService)->directions([[1.0, 2.0], [3.0, 4.0]]);
 
         $this->assertSame('FeatureCollection', $result['type']);
     }

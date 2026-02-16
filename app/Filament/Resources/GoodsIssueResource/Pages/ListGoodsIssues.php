@@ -27,7 +27,7 @@ class ListGoodsIssues extends ListRecords
                 ->action(function (array $data) {
                     $path = \Illuminate\Support\Facades\Storage::disk('local')->path($data['file']);
                     \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\TripsImport, $path);
-                    
+
                     \Filament\Notifications\Notification::make()
                         ->title('Import Successful')
                         ->success()

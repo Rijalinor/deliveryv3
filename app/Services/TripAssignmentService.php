@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Trip;
-use Illuminate\Support\Facades\DB;
 use Exception;
+use Illuminate\Support\Facades\DB;
 
 class TripAssignmentService
 {
@@ -19,7 +19,7 @@ class TripAssignmentService
                     ->lockForUpdate()
                     ->first();
 
-                if (!$gi) {
+                if (! $gi) {
                     throw new Exception("GI Number {$giNumber} not found.");
                 }
 
@@ -40,13 +40,13 @@ class TripAssignmentService
 
                 foreach ($groupedItems as $storeName => $items) {
                     $firstItem = $items->first();
-                    
+
                     // Resolve Store
                     $store = null;
                     if ($firstItem->store_id) {
                         $store = \App\Models\Store::find($firstItem->store_id);
                     }
-                    if (!$store) {
+                    if (! $store) {
                         $store = \App\Models\Store::firstOrCreate(
                             ['name' => $storeName],
                             [
@@ -64,7 +64,7 @@ class TripAssignmentService
                         ->where('store_id', $store->id)
                         ->first();
 
-                    if (!$stop) {
+                    if (! $stop) {
                         $stop = \App\Models\TripStop::create([
                             'trip_id' => $trip->id,
                             'store_id' => $store->id,

@@ -34,7 +34,9 @@ class TripStopObserver
     {
         $trip = $tripStop->trip;
 
-        if (! $trip) return;
+        if (! $trip) {
+            return;
+        }
 
         // hanya hitung stop yang aktif (tidak ter-soft delete)
         $stops = $trip->stops()->get(['id', 'status']);
@@ -42,6 +44,7 @@ class TripStopObserver
         if ($stops->isEmpty()) {
             // kalau trip belum punya stop, biarkan planned
             $trip->updateQuietly(['status' => 'planned']);
+
             return;
         }
 

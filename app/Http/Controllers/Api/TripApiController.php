@@ -7,23 +7,21 @@ use App\Models\Trip;
 use App\Models\TripStop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class TripApiController extends Controller
 {
     /**
      * Mark stop as arrived
-     * 
-     * @param Trip $trip
-     * @param TripStop $stop
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function markArrived(Trip $trip, TripStop $stop)
     {
         try {
             $driver = Auth::user();
-            
+
             // Verify ownership
             if ($trip->driver_id !== $driver->id) {
                 return response()->json([
@@ -82,17 +80,14 @@ class TripApiController extends Controller
 
     /**
      * Mark stop as done (completed successfully)
-     * 
-     * @param Trip $trip
-     * @param TripStop $stop
-     * @param Request $request
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function markDone(Trip $trip, TripStop $stop, Request $request)
     {
         try {
             $driver = Auth::user();
-            
+
             // Verify ownership
             if ($trip->driver_id !== $driver->id) {
                 return response()->json([
@@ -153,17 +148,14 @@ class TripApiController extends Controller
 
     /**
      * Mark stop as rejected (failed delivery)
-     * 
-     * @param Trip $trip
-     * @param TripStop $stop
-     * @param Request $request
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function markRejected(Trip $trip, TripStop $stop, Request $request)
     {
         try {
             $driver = Auth::user();
-            
+
             // Verify ownership
             if ($trip->driver_id !== $driver->id) {
                 return response()->json([
@@ -225,15 +217,14 @@ class TripApiController extends Controller
 
     /**
      * Finish the entire trip
-     * 
-     * @param Trip $trip
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function finishTrip(Trip $trip)
     {
         try {
             $driver = Auth::user();
-            
+
             // Verify ownership
             if ($trip->driver_id !== $driver->id) {
                 return response()->json([

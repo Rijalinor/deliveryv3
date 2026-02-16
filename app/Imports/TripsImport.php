@@ -2,14 +2,14 @@
 
 namespace App\Imports;
 
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use App\Models\GoodsIssue;
 use App\Models\GoodsIssueItem;
 use App\Models\Store;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Concerns\ToCollection;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class TripsImport implements ToCollection, WithHeadingRow
@@ -21,7 +21,9 @@ class TripsImport implements ToCollection, WithHeadingRow
         });
 
         foreach ($grouped as $gi => $items) {
-            if (empty($gi)) continue;
+            if (empty($gi)) {
+                continue;
+            }
 
             DB::transaction(function () use ($gi, $items) {
                 // Date logic
@@ -35,7 +37,8 @@ class TripsImport implements ToCollection, WithHeadingRow
                         } else {
                             $date = Carbon::parse($dateVal);
                         }
-                    } catch (\Throwable $e) {}
+                    } catch (\Throwable $e) {
+                    }
                 }
 
                 $goodsIssue = GoodsIssue::firstOrCreate(
@@ -54,7 +57,7 @@ class TripsImport implements ToCollection, WithHeadingRow
                         'store_name' => $outletName,
                         'address' => $item['address'] ?? null,
                         'store_id' => $store?->id,
-                        'amount' => 0 // Add logic if amount is in excel
+                        'amount' => 0, // Add logic if amount is in excel
                     ]);
                 }
             });

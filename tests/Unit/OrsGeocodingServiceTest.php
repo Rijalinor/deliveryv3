@@ -27,7 +27,7 @@ class OrsGeocodingServiceTest extends TestCase
             ], 200),
         ]);
 
-        $result = (new OrsGeocodingService())->search('jakarta');
+        $result = (new OrsGeocodingService)->search('jakarta');
 
         $this->assertTrue($result['ok']);
         $this->assertSame('A', $result['data'][0]['label']);
@@ -43,7 +43,7 @@ class OrsGeocodingServiceTest extends TestCase
             'https://api.openrouteservice.org/geocode/search*' => Http::response([], 500),
         ]);
 
-        $result = (new OrsGeocodingService())->search('bandung');
+        $result = (new OrsGeocodingService)->search('bandung');
 
         $this->assertFalse($result['ok']);
         $this->assertSame('ORS geocode failed', $result['message']);
@@ -63,7 +63,7 @@ class OrsGeocodingServiceTest extends TestCase
             ], 200),
         ]);
 
-        $result = (new OrsGeocodingService())->reverse(-6.2, 106.8);
+        $result = (new OrsGeocodingService)->reverse(-6.2, 106.8);
 
         $this->assertTrue($result['ok']);
         $this->assertSame('Jalan Test 123', $result['data']['label']);
@@ -77,7 +77,7 @@ class OrsGeocodingServiceTest extends TestCase
             'https://api.openrouteservice.org/geocode/reverse*' => Http::response([], 500),
         ]);
 
-        $result = (new OrsGeocodingService())->reverse(-6.2, 106.8);
+        $result = (new OrsGeocodingService)->reverse(-6.2, 106.8);
 
         $this->assertFalse($result['ok']);
         $this->assertSame('ORS reverse failed', $result['message']);

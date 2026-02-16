@@ -13,10 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
-        
+
         // API rate limiting: 60 requests per minute per IP
         $middleware->throttleApi('60,1');
-        
+
         // Exclude API routes from CSRF verification for token-based auth
         $middleware->validateCsrfTokens(except: [
             'api/*',

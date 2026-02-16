@@ -14,7 +14,7 @@ class TripStatsOverview extends BaseWidget
     protected function getStats(): array
     {
         $today = now()->startOfDay();
-        
+
         $totalToday = Trip::whereDate('start_date', $today)->count();
         $activeNow = Trip::where('status', 'in_progress')->count();
         $completedToday = Trip::whereDate('start_date', $today)
@@ -38,7 +38,7 @@ class TripStatsOverview extends BaseWidget
                 ->chart([3, 5, 4, 6, 5, 7, $activeNow]),
 
             Stat::make('Completed Today', $completedToday)
-                ->description(round($totalToday > 0 ? ($completedToday / $totalToday) * 100 : 0) . '% completion rate')
+                ->description(round($totalToday > 0 ? ($completedToday / $totalToday) * 100 : 0).'% completion rate')
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success')
                 ->chart([2, 4, 3, 8, 6, 12, $completedToday]),

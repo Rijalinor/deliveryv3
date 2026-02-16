@@ -8,9 +8,13 @@ use Filament\Pages\Page;
 class MonitoringTrips extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-map';
+
     protected static ?string $navigationLabel = 'Monitoring';
+
     protected static ?string $title = 'Monitoring Trips';
+
     protected static ?string $navigationGroup = 'Trips';
+
     protected static ?int $navigationSort = 1;
 
     protected static ?string $pollingInterval = '30s';

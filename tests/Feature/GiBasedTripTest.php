@@ -2,15 +2,15 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
+use App\Filament\Driver\Resources\DriverTripResource\Pages\CreateDriverTrip;
 use App\Models\GoodsIssue;
 use App\Models\GoodsIssueItem;
 use App\Models\Store;
 use App\Models\Trip;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-use App\Filament\Driver\Resources\DriverTripResource\Pages\CreateDriverTrip;
+use Tests\TestCase;
 
 class GiBasedTripTest extends TestCase
 {
@@ -37,7 +37,7 @@ class GiBasedTripTest extends TestCase
             'pfi_number' => 'PFI-A1',
             'store_name' => 'Toko A',
             'address' => 'Jalan A',
-            'amount' => 50000
+            'amount' => 50000,
         ]);
 
         // GI 2 (Contains same store Toko A, so should merge)
@@ -47,20 +47,20 @@ class GiBasedTripTest extends TestCase
             'pfi_number' => 'PFI-A2', // Different PFI
             'store_name' => 'Toko A', // Same Store
             'address' => 'Jalan A',
-            'amount' => 75000
+            'amount' => 75000,
         ]);
         GoodsIssueItem::create([
             'goods_issue_id' => $gi2->id,
             'pfi_number' => 'PFI-B1',
             'store_name' => 'Toko B', // New Store
             'address' => 'Jalan B',
-            'amount' => 30000
+            'amount' => 30000,
         ]);
 
         // 2. Perform Create Action via Filament Page component logic simulation
         // Since testing Filament pages directly can be complex, let's call the Logic directly or use Livewire test
         // Let's rely on the Model/Service logic which is what HandleRecordCreation calls.
-        
+
         $data = [
             'gi_input' => ['GI-001', 'GI-002'],
             'start_date' => now()->toDateString(),
@@ -70,7 +70,7 @@ class GiBasedTripTest extends TestCase
         // Simulate logic that is in CreateDriverTrip::handleRecordCreation
         // We can instantiate the page and call the method if public/protected, OR just recreate logic here for integration test
         // Better: Use Livewire test to fill form
-        
+
         Livewire::test(CreateDriverTrip::class)
             ->fillForm([
                 'gi_input' => ['GI-001', 'GI-002'],
@@ -90,8 +90,8 @@ class GiBasedTripTest extends TestCase
 
         // Check Stops (Should be 2 stops: Toko A and Toko B)
         $this->assertEquals(2, $trip->stops()->count());
-        
-        $stopA = $trip->stops()->whereHas('store', fn($q) => $q->where('name', 'Toko A'))->first();
+
+        $stopA = $trip->stops()->whereHas('store', fn ($q) => $q->where('name', 'Toko A'))->first();
         $this->assertNotNull($stopA);
         // Stop A should have 2 invoices (PFI-A1 from GI1, PFI-A2 from GI2)
         // Access via relation if defined, or check DB

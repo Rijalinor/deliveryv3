@@ -13,7 +13,7 @@ class TripRouteGenerator
         $trip->loadMissing(['stops.store']);
 
         $stops = $trip->stops
-            ->filter(fn($s) => $s->store && $s->store->lat && $s->store->lng)
+            ->filter(fn ($s) => $s->store && $s->store->lat && $s->store->lng)
             ->values();
 
         if ($stops->isEmpty()) {
@@ -33,7 +33,7 @@ class TripRouteGenerator
         $bufferMinutes = 10;
         $serviceMinutes = (int) ($trip->service_minutes ?? 5);
         $trafficFactor = (float) ($trip->traffic_factor ?? 1.30);
-        
+
         $bufferSec = $bufferMinutes * 60;
         $serviceSec = $serviceMinutes * 60;
 
@@ -64,11 +64,13 @@ class TripRouteGenerator
         $assignedStopIds = [];
         $sequence = 1;
 
-        \Illuminate\Support\Facades\DB::transaction(function() use ($steps, $unassigned, $stops, &$sequence, &$assignedStopIds) {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($steps, $unassigned, $stops, &$sequence, &$assignedStopIds) {
             // 1. Assign sequence untuk yang sukses di-optimize
             foreach ($steps as $step) {
                 $jobId = data_get($step, 'job');
-                if (!$jobId) continue;
+                if (! $jobId) {
+                    continue;
+                }
 
                 $stop = $stops->firstWhere('id', (int) $jobId);
                 if ($stop) {
@@ -88,7 +90,7 @@ class TripRouteGenerator
             foreach ($unassigned as $u) {
                 $jobId = data_get($u, 'id');
                 $stop = $stops->firstWhere('id', (int) $jobId);
-                if ($stop && !in_array($stop->id, $assignedStopIds)) {
+                if ($stop && ! in_array($stop->id, $assignedStopIds)) {
                     \Illuminate\Support\Facades\DB::table('trip_stops')
                         ->where('id', $stop->id)
                         ->update([
@@ -133,7 +135,7 @@ class TripRouteGenerator
 
             $totalDistance += $segmentDistance;
             $arrivalSec = $currentSec + $segmentDuration;
-            
+
             $closeSec = $this->timeToSec($stop->store->close_time ?? '23:59:00');
 
             $stop->update([
@@ -159,7 +161,7 @@ class TripRouteGenerator
         $coords[] = $startCoord; // Kembali ke gudang
 
         $geojson = $this->ors->directions($coords, $trip->ors_profile ?? config('delivery.ors_profile', 'driving-car'));
-        
+
         $trip->update([
             'generated_at' => now(),
             'total_distance_m' => (int) $totalDistance,
@@ -194,6 +196,7 @@ class TripRouteGenerator
         $h = (int) ($parts[0] ?? 0);
         $m = (int) ($parts[1] ?? 0);
         $s = (int) ($parts[2] ?? 0);
+
         return $h * 3600 + $m * 60 + $s;
     }
 
@@ -203,6 +206,7 @@ class TripRouteGenerator
         $h = intdiv($sec, 3600);
         $m = intdiv($sec % 3600, 60);
         $s = $sec % 60;
+
         return sprintf('%02d:%02d:%02d', $h, $m, $s);
     }
 }

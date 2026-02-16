@@ -2,19 +2,19 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\User;
 use App\Models\Trip;
 use App\Models\TripStop;
+use App\Models\User;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Database\Eloquent\Builder;
 
 class DriverLeaderboard extends BaseWidget
 {
     protected static ?int $sort = 2;
-    protected int | string | array $columnSpan = 'full';
-    
+
+    protected int|string|array $columnSpan = 'full';
+
     protected static ?string $heading = '🏅 Leaderboard Driver Terbaik';
 
     public function table(Table $table): Table
@@ -48,21 +48,22 @@ class DriverLeaderboard extends BaseWidget
                             $q->where('driver_id', $record->id);
                         })->where('status', 'done')->count();
 
-                        if ($totalStops === 0) return '-';
+                        if ($totalStops === 0) {
+                            return '-';
+                        }
 
                         $onTimeStops = TripStop::whereHas('trip', function ($q) use ($record) {
                             $q->where('driver_id', $record->id);
                         })
-                        ->where('status', 'done')
-                        ->where('is_late', false)
-                        ->count();
+                            ->where('status', 'done')
+                            ->where('is_late', false)
+                            ->count();
 
-                        return round(($onTimeStops / $totalStops) * 100, 1) . '%';
+                        return round(($onTimeStops / $totalStops) * 100, 1).'%';
                     })
                     ->badge()
-                    ->color(fn (string $state): string => 
-                        (float)$state >= 90 ? 'success' : 
-                        ((float)$state >= 70 ? 'warning' : 'danger')
+                    ->color(fn (string $state): string => (float) $state >= 90 ? 'success' :
+                        ((float) $state >= 70 ? 'warning' : 'danger')
                     ),
 
                 Tables\Columns\TextColumn::make('total_dist')
@@ -71,7 +72,8 @@ class DriverLeaderboard extends BaseWidget
                         $m = Trip::where('driver_id', $record->id)
                             ->where('status', 'done')
                             ->sum('total_distance_m');
-                        return round($m / 1000, 1) . ' km';
+
+                        return round($m / 1000, 1).' km';
                     }),
             ])
             ->defaultSort('trips_count', 'desc');

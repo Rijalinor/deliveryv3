@@ -35,17 +35,17 @@ class GenerateTripRouteJob implements ShouldQueue
                 ->title('Route generated successfully')
                 ->success()
                 ->broadcast($this->trip->user) // Broadcast to user who owns the trip or admin? For now let's try broadcast to all or just save DB notification
-                ->sendToDatabase($this->trip->driver->user ?? \App\Models\User::all()); // Fallback to all users for now as we don't know exactly who triggered it. 
-                // Actually, let's just use database notification for simplicity, addressing all admins might be noisy.
-                // Better: Just rely on the job finishing. The user will see the status update if they refresh.
-                // Let's keep it simple:
-                
+                ->sendToDatabase($this->trip->driver->user ?? \App\Models\User::all()); // Fallback to all users for now as we don't know exactly who triggered it.
+            // Actually, let's just use database notification for simplicity, addressing all admins might be noisy.
+            // Better: Just rely on the job finishing. The user will see the status update if they refresh.
+            // Let's keep it simple:
+
         } catch (\Throwable $e) {
-             // Log error
-             \Illuminate\Support\Facades\Log::error('Trip Route Generation Failed: ' . $e->getMessage());
-             
-             // Optional: Fail the job
-             $this->fail($e);
+            // Log error
+            \Illuminate\Support\Facades\Log::error('Trip Route Generation Failed: '.$e->getMessage());
+
+            // Optional: Fail the job
+            $this->fail($e);
         }
     }
 }

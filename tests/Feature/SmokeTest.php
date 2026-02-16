@@ -14,7 +14,7 @@ class SmokeTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Setup necessary roles
         Role::create(['name' => 'admin', 'guard_name' => 'web']);
         Role::create(['name' => 'driver', 'guard_name' => 'web']);

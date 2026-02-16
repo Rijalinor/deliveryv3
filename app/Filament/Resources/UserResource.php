@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
-use App\Filament\Resources\UserResource\RelationManagers;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -11,15 +10,14 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Hash;
-
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
     protected static ?string $navigationLabel = 'Drivers';
+
     protected static ?string $navigationIcon = 'heroicon-o-truck';
 
     public static function getEloquentQuery(): Builder
@@ -42,9 +40,9 @@ class UserResource extends Resource
             Forms\Components\TextInput::make('password')
                 ->password()
                 ->label('Password')
-                ->required(fn(string $operation) => $operation === 'create')
-                ->dehydrated(fn($state) => filled($state))
-                ->dehydrateStateUsing(fn($state) => filled($state) ? Hash::make($state) : null)
+                ->required(fn (string $operation) => $operation === 'create')
+                ->dehydrated(fn ($state) => filled($state))
+                ->dehydrateStateUsing(fn ($state) => filled($state) ? Hash::make($state) : null)
                 ->helperText('Isi hanya jika ingin set/ubah password.'),
         ])->columns(2);
     }

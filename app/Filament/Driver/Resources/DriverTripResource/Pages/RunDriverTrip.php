@@ -3,19 +3,16 @@
 namespace App\Filament\Driver\Resources\DriverTripResource\Pages;
 
 use App\Filament\Driver\Resources\DriverTripResource;
-use Filament\Resources\Pages\Page;
 use Filament\Notifications\Notification;
+use Filament\Resources\Pages\Page;
 use Illuminate\Support\Carbon;
-use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Concerns\InteractsWithForms;
-
 
 class RunDriverTrip extends Page
 {
     protected static string $resource = DriverTripResource::class;
+
     protected static string $view = 'filament.driver.run-trip';
+
     private const EARTH_RADIUS_METERS = 6371000;
 
     public $record; // Trip model
@@ -25,7 +22,6 @@ class RunDriverTrip extends Page
         'skip_reason' => null,
 
     ];
-
 
     public function mount($record): void
     {
@@ -77,8 +73,6 @@ class RunDriverTrip extends Page
             ]);
     }
 
-
-
     public function refreshTrip(): void
     {
         $this->record->refresh();
@@ -106,13 +100,16 @@ class RunDriverTrip extends Page
     public function progressText(): string
     {
         $total = $this->totalStops();
-        $done  = $this->doneStops();
+        $done = $this->doneStops();
+
         return "{$done} / {$total} selesai";
     }
 
     public function statusBadge($stop): array
     {
-        if (! $stop) return ['-', 'gray'];
+        if (! $stop) {
+            return ['-', 'gray'];
+        }
 
         $etaAt = $stop->eta_at ? Carbon::parse($stop->eta_at) : null;
         $closeAt = $stop->close_at ? Carbon::parse($stop->close_at) : null;
@@ -138,6 +135,7 @@ class RunDriverTrip extends Page
         if (! $stop || ! $stop->store) {
             // kalau sudah tidak ada stop aktif, kirim null biar map bisa kosong / tetap
             $this->dispatch('run-trip-refresh', dest: null);
+
             return;
         }
 
@@ -149,25 +147,28 @@ class RunDriverTrip extends Page
         ]);
     }
 
-
     public function gmapsUrl(): string
     {
         $stop = $this->activeStop();
-        if (! $stop || ! $stop->store) return '#';
+        if (! $stop || ! $stop->store) {
+            return '#';
+        }
 
         $lat = (float) $stop->store->lat;
         $lng = (float) $stop->store->lng;
 
-        return "https://www.google.com/maps/dir/?api=1"
-            . "&destination={$lat},{$lng}"
-            . "&travelmode=driving"
-            . "&dir_action=navigate";
+        return 'https://www.google.com/maps/dir/?api=1'
+            ."&destination={$lat},{$lng}"
+            .'&travelmode=driving'
+            .'&dir_action=navigate';
     }
 
     public function markArrived(): void
     {
         $stop = $this->activeStop();
-        if (! $stop) return;
+        if (! $stop) {
+            return;
+        }
 
         if ($stop->status === 'pending') {
             $stop->update([
@@ -191,11 +192,15 @@ class RunDriverTrip extends Page
     public function updateDriverLocation(float $lat, float $lng): void
     {
         $stop = $this->activeStop();
-        if (! $stop || ! in_array($stop->status, ['pending', 'arrived']) || ! $stop->store) return;
+        if (! $stop || ! in_array($stop->status, ['pending', 'arrived']) || ! $stop->store) {
+            return;
+        }
 
         $destLat = (float) $stop->store->lat;
         $destLng = (float) $stop->store->lng;
-        if (! $destLat || ! $destLng) return;
+        if (! $destLat || ! $destLng) {
+            return;
+        }
 
         $radius = (int) config('delivery.auto_arrive_radius_meters', 100);
         $distance = $this->distanceMeters($lat, $lng, $destLat, $destLng);
@@ -224,17 +229,18 @@ class RunDriverTrip extends Page
                     'status' => 'done',
                     'done_at' => now(),
                 ]);
-                
+
                 Notification::make()->title('Stop selesai (Auto-Done)')->success()->send();
                 $this->refreshTrip();
                 $this->dispatchMapToActiveStop();
             }
+
             return;
         }
 
         // Logic Auto-Arrived
         if ($stop->status === 'pending') {
-             \Illuminate\Support\Facades\Log::info("Auto-Arrived Triggered for Stop #{$stop->id}");
+            \Illuminate\Support\Facades\Log::info("Auto-Arrived Triggered for Stop #{$stop->id}");
             $stop->update([
                 'status' => 'arrived',
                 'arrived_at' => $stop->arrived_at ?? now(),
@@ -250,7 +256,9 @@ class RunDriverTrip extends Page
     public function markDone(): void
     {
         $stop = $this->activeStop();
-        if (! $stop) return;
+        if (! $stop) {
+            return;
+        }
 
         $stop->update([
             'status' => 'done',
@@ -259,7 +267,6 @@ class RunDriverTrip extends Page
             // 'skip_reason' => $reason,
             // 'skip_note' => $note,
         ]);
-
 
         Notification::make()->title('Stop selesai (Done)')->success()->send();
 
@@ -275,18 +282,21 @@ class RunDriverTrip extends Page
     public function markRejected(): void
     {
         $stop = $this->activeStop();
-        if (! $stop) return;
+        if (! $stop) {
+            return;
+        }
 
         $reason = $this->data['skip_reason'] ?? null;
-        $note   = trim((string) ($this->data['skip_note'] ?? ''));
+        $note = trim((string) ($this->data['skip_note'] ?? ''));
 
         if (! $reason) {
             Notification::make()->title('Pilih alasan reject dulu')->danger()->send();
+
             return;
         }
 
         // gabungkan jadi 1 string
-        $finalReason = $reason . ($note !== '' ? (' | ' . $note) : '');
+        $finalReason = $reason.($note !== '' ? (' | '.$note) : '');
 
         $stop->update([
             'status' => 'rejected', // Ganti skipped jadi rejected
@@ -301,7 +311,6 @@ class RunDriverTrip extends Page
         $this->dispatchMapToActiveStop();
     }
 
-
     public function finishTrip(): void
     {
         $still = $this->record->stops()
@@ -310,6 +319,7 @@ class RunDriverTrip extends Page
 
         if ($still) {
             Notification::make()->title('Masih ada stop yang belum selesai')->danger()->send();
+
             return;
         }
 

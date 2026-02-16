@@ -6,16 +6,17 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Tables\Actions\Action;
 use Filament\Support\Enums\ActionSize;
-use Illuminate\Support\Str;
+use Filament\Tables;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Table;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class StopsRelationManager extends RelationManager
 {
     protected static string $relationship = 'stops';
+
     protected static ?string $title = 'Stops';
 
     public function form(Form $form): Form
@@ -34,8 +35,8 @@ class StopsRelationManager extends RelationManager
             Forms\Components\Textarea::make('skip_reason')
                 ->label('Alasan reject')
                 ->rows(3)
-                ->visible(fn(Forms\Get $get) => $get('status') === 'skipped')
-                ->required(fn(Forms\Get $get) => $get('status') === 'skipped'),
+                ->visible(fn (Forms\Get $get) => $get('status') === 'skipped')
+                ->required(fn (Forms\Get $get) => $get('status') === 'skipped'),
 
             // tampil saja (nanti diisi saat generate ORS)
             Forms\Components\TextInput::make('sequence')
@@ -83,7 +84,7 @@ class StopsRelationManager extends RelationManager
                     ->state(function ($record) {
                         $done = $record->done_at ? Carbon::parse($record->done_at)->format('H:i') : null;
                         $skip = $record->skipped_at ? Carbon::parse($record->skipped_at)->format('H:i') : null;
-                        $arr  = $record->arrived_at ? Carbon::parse($record->arrived_at)->format('H:i') : null;
+                        $arr = $record->arrived_at ? Carbon::parse($record->arrived_at)->format('H:i') : null;
 
                         if ($done) {
                             return "Done {$done}";
@@ -93,6 +94,7 @@ class StopsRelationManager extends RelationManager
                             $reason = trim((string) ($record->skip_reason ?? ''));
                             if ($reason !== '') {
                                 $short = Str::limit($reason, 18); // biar gak kepanjangan di tabel
+
                                 return "Rejected {$skip} — {$short}";
                             }
 
@@ -107,27 +109,35 @@ class StopsRelationManager extends RelationManager
                     })
                     ->badge()
                     ->color(function ($record) {
-                        if ($record->done_at) return 'success';
-                        if ($record->skipped_at) return 'danger';
-                        if ($record->arrived_at) return 'warning';
+                        if ($record->done_at) {
+                            return 'success';
+                        }
+                        if ($record->skipped_at) {
+                            return 'danger';
+                        }
+                        if ($record->arrived_at) {
+                            return 'warning';
+                        }
+
                         return 'gray';
                     })
                     ->tooltip(function ($record) {
                         // tooltip khusus skip biar alasan lengkap keliatan
                         if ($record->skipped_at) {
-                            $t = 'Rejected: ' . Carbon::parse($record->skipped_at)->format('d M Y H:i');
-                            if (!empty($record->skip_reason)) {
-                                $t .= "\nAlasan: " . $record->skip_reason;
+                            $t = 'Rejected: '.Carbon::parse($record->skipped_at)->format('d M Y H:i');
+                            if (! empty($record->skip_reason)) {
+                                $t .= "\nAlasan: ".$record->skip_reason;
                             }
+
                             return $t;
                         }
 
                         if ($record->done_at) {
-                            return 'Done: ' . Carbon::parse($record->done_at)->format('d M Y H:i');
+                            return 'Done: '.Carbon::parse($record->done_at)->format('d M Y H:i');
                         }
 
                         if ($record->arrived_at) {
-                            return 'Arrived: ' . Carbon::parse($record->arrived_at)->format('d M Y H:i');
+                            return 'Arrived: '.Carbon::parse($record->arrived_at)->format('d M Y H:i');
                         }
 
                         return null;
@@ -137,20 +147,27 @@ class StopsRelationManager extends RelationManager
                     ->label('Durasi Arrived')
                     ->state(function ($record) {
                         $minutes = $record->arrivedToFinishMinutes();
-                        if ($minutes === null) return '—';
+                        if ($minutes === null) {
+                            return '—';
+                        }
 
                         $hours = intdiv($minutes, 60);
                         $mins = $minutes % 60;
 
-                        if ($hours > 0 && $mins > 0) return "{$hours}j {$mins}m";
-                        if ($hours > 0) return "{$hours}j";
+                        if ($hours > 0 && $mins > 0) {
+                            return "{$hours}j {$mins}m";
+                        }
+                        if ($hours > 0) {
+                            return "{$hours}j";
+                        }
+
                         return "{$mins}m";
                     })
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('store.close_time')
                     ->label('Jam Tutup')
-                    ->formatStateUsing(fn($state) => $state ? substr($state, 0, 5) : '23:59')
+                    ->formatStateUsing(fn ($state) => $state ? substr($state, 0, 5) : '23:59')
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('skip_reason')
@@ -168,7 +185,7 @@ class StopsRelationManager extends RelationManager
                     ->color('blue')
                     ->size(ActionSize::Small)
                     ->tooltip('Navigasi via Google Maps')
-                    ->url(fn($record) => $this->gmapsUrl($record))
+                    ->url(fn ($record) => $this->gmapsUrl($record))
                     ->openUrlInNewTab(),
 
                 // Tombol cepat: Arrived
@@ -223,7 +240,7 @@ class StopsRelationManager extends RelationManager
                 // Edit manual (opsional) - kalau mau minimal aja, boleh hapus ini
                 Tables\Actions\EditAction::make()
                     ->label('Edit')
-                    ->visible(fn() => false), // biar driver gak utak-atik selain tombol cepat
+                    ->visible(fn () => false), // biar driver gak utak-atik selain tombol cepat
             ])
             // driver tidak boleh bulk delete
             ->bulkActions([]);
@@ -238,13 +255,14 @@ class StopsRelationManager extends RelationManager
 
         if (! $lat || ! $lng) {
             $q = urlencode($store->address ?? $store->name ?? '');
+
             return "https://www.google.com/maps/search/?api=1&query={$q}";
         }
 
         // ✅ tanpa origin -> "Your location"
-        return "https://www.google.com/maps/dir/?api=1"
-            . "&destination={$lat},{$lng}"
-            . "&travelmode=driving"
-            . "&dir_action=navigate";
+        return 'https://www.google.com/maps/dir/?api=1'
+            ."&destination={$lat},{$lng}"
+            .'&travelmode=driving'
+            .'&dir_action=navigate';
     }
 }

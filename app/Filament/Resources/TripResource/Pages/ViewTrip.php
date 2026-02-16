@@ -3,21 +3,19 @@
 namespace App\Filament\Resources\TripResource\Pages;
 
 use App\Filament\Resources\TripResource;
-use Filament\Resources\Pages\ViewRecord;
-use Filament\Infolists\Infolist;
+use App\Services\TripRouteGenerator;
+use Filament\Actions;
+use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\Grid;
-use Filament\Actions;
 use Filament\Infolists\Components\ViewEntry;
+use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
-use App\Services\TripRouteGenerator;
-
+use Filament\Resources\Pages\ViewRecord;
 
 class ViewTrip extends ViewRecord
 {
     protected static string $resource = TripResource::class;
-
 
     public function infolist(Infolist $infolist): Infolist
     {
@@ -27,28 +25,28 @@ class ViewTrip extends ViewRecord
                     Grid::make(5)->schema([
                         TextEntry::make('stops_total')
                             ->label('Total Toko')
-                            ->state(fn($record) => $record->stops()->count())
+                            ->state(fn ($record) => $record->stops()->count())
                             ->icon('heroicon-o-shopping-bag')
                             ->color('primary')
                             ->badge(),
 
                         TextEntry::make('stops_done')
                             ->label('Selesai')
-                            ->state(fn($record) => $record->stops()->where('status', 'done')->count())
+                            ->state(fn ($record) => $record->stops()->where('status', 'done')->count())
                             ->icon('heroicon-o-check-circle')
                             ->color('success')
                             ->badge(),
 
                         TextEntry::make('stops_skipped')
                             ->label('Reject')
-                            ->state(fn($record) => $record->stops()->whereIn('status', ['skipped', 'rejected'])->count())
+                            ->state(fn ($record) => $record->stops()->whereIn('status', ['skipped', 'rejected'])->count())
                             ->icon('heroicon-o-x-circle')
                             ->color('danger')
                             ->badge(),
 
                         TextEntry::make('stops_remaining')
                             ->label('Sisa')
-                            ->state(fn($record) => $record->stops()->whereIn('status', ['pending', 'arrived'])->count())
+                            ->state(fn ($record) => $record->stops()->whereIn('status', ['pending', 'arrived'])->count())
                             ->icon('heroicon-o-clock')
                             ->color('warning')
                             ->badge(),
@@ -56,7 +54,7 @@ class ViewTrip extends ViewRecord
                         TextEntry::make('status')
                             ->label('Status Trip')
                             ->badge()
-                            ->color(fn($state) => match ($state) {
+                            ->color(fn ($state) => match ($state) {
                                 'planned' => 'gray',
                                 'on_going' => 'warning',
                                 'done' => 'success',
@@ -88,7 +86,7 @@ class ViewTrip extends ViewRecord
                             ->icon('heroicon-o-clock'),
                         TextEntry::make('traffic_factor')
                             ->label('Faktor Traffic')
-                            ->state(fn($record) => $record->traffic_factor . 'x')
+                            ->state(fn ($record) => $record->traffic_factor.'x')
                             ->icon('heroicon-o-bolt'),
                     ])->columnSpan(1),
 
@@ -97,18 +95,26 @@ class ViewTrip extends ViewRecord
                         TextEntry::make('total_distance_m')
                             ->label('Total Jarak')
                             ->state(function ($record) {
-                                if (!$record->total_distance_m) return '-';
-                                return round($record->total_distance_m / 1000, 2) . ' km';
+                                if (! $record->total_distance_m) {
+                                    return '-';
+                                }
+
+                                return round($record->total_distance_m / 1000, 2).' km';
                             })
                             ->icon('heroicon-o-map'),
                         TextEntry::make('total_duration_s')
                             ->label('Estimasi Waktu')
                             ->state(function ($record) {
-                                if (!$record->total_duration_s) return '-';
+                                if (! $record->total_duration_s) {
+                                    return '-';
+                                }
                                 $minutes = round($record->total_duration_s / 60);
-                                if ($minutes < 60) return $minutes . ' menit';
+                                if ($minutes < 60) {
+                                    return $minutes.' menit';
+                                }
                                 $hours = floor($minutes / 60);
                                 $min = $minutes % 60;
+
                                 return "{$hours} jam {$min} menit";
                             })
                             ->icon('heroicon-o-clock'),
@@ -131,15 +137,11 @@ class ViewTrip extends ViewRecord
                 ->schema([
                     ViewEntry::make('map')
                         ->label('')
-                        ->state(fn($record) => $record)
+                        ->state(fn ($record) => $record)
                         ->view('filament.components.trip-map'),
                 ]),
         ]);
     }
-
-
-
-
 
     protected function getHeaderActions(): array
     {
@@ -148,7 +150,7 @@ class ViewTrip extends ViewRecord
                 ->label('Mulai Trip')
                 ->icon('heroicon-o-play')
                 ->color('warning')
-                ->visible(fn() => $this->record->status === 'planned')
+                ->visible(fn () => $this->record->status === 'planned')
                 ->action(function () {
                     $this->record->update(['status' => 'on_going']);
                     $this->notify('success', 'Trip dimulai');
@@ -183,7 +185,7 @@ class ViewTrip extends ViewRecord
                 ->label('Selesaikan Trip')
                 ->icon('heroicon-o-check')
                 ->color('success')
-                ->visible(fn() => $this->record->status !== 'done')
+                ->visible(fn () => $this->record->status !== 'done')
                 ->requiresConfirmation()
                 ->action(function () {
                     $this->record->update(['status' => 'done']);
@@ -194,7 +196,7 @@ class ViewTrip extends ViewRecord
                 ->label('Reset ke Planned')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
-                ->visible(fn() => $this->record->status !== 'planned')
+                ->visible(fn () => $this->record->status !== 'planned')
                 ->requiresConfirmation()
                 ->action(function () {
                     $this->record->update(['status' => 'planned']);

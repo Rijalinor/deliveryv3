@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Trip;
 use App\Models\DriverLocation;
+use App\Models\Trip;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -13,8 +13,7 @@ class DriverApiController extends Controller
 {
     /**
      * Update driver's current location
-     * 
-     * @param Request $request
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function updateLocation(Request $request)
@@ -35,7 +34,7 @@ class DriverApiController extends Controller
 
         try {
             $driver = Auth::user();
-            
+
             // Create location record
             DriverLocation::create([
                 'driver_id' => $driver->id,
@@ -78,14 +77,14 @@ class DriverApiController extends Controller
 
     /**
      * Get driver's active trip
-     * 
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function getActiveTrip()
     {
         try {
             $driver = Auth::user();
-            
+
             $trip = Trip::where('driver_id', $driver->id)
                 ->whereIn('status', ['planned', 'on_going'])
                 ->with(['stops' => function ($query) {
@@ -93,7 +92,7 @@ class DriverApiController extends Controller
                 }, 'stops.store', 'stops.invoices'])
                 ->first();
 
-            if (!$trip) {
+            if (! $trip) {
                 return response()->json([
                     'success' => true,
                     'message' => 'No active trip found',
@@ -145,15 +144,14 @@ class DriverApiController extends Controller
 
     /**
      * Get specific trip details
-     * 
-     * @param Trip $trip
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     public function getTripDetails(Trip $trip)
     {
         try {
             $driver = Auth::user();
-            
+
             // Ensure driver owns this trip
             if ($trip->driver_id !== $driver->id) {
                 return response()->json([

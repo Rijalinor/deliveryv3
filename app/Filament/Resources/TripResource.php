@@ -3,25 +3,22 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TripResource\Pages;
-use App\Filament\Resources\TripResource\RelationManagers;
+use App\Models\Store;
 use App\Models\Trip;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Models\User;
-use App\Models\Store;
-use App\Models\TripStop;
-
 
 class TripResource extends Resource
 {
     protected static ?string $model = Trip::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-map';
+
     protected static ?string $navigationLabel = 'Trips';
 
     public static function form(Form $form): Form
@@ -30,7 +27,7 @@ class TripResource extends Resource
             Forms\Components\Section::make('Trip Info')->schema([
                 Forms\Components\Select::make('driver_id')
                     ->label('Driver')
-                    ->options(fn() => User::role('driver')->pluck('name', 'id'))
+                    ->options(fn () => User::role('driver')->pluck('name', 'id'))
                     ->searchable()
                     ->required(),
 
@@ -58,12 +55,12 @@ class TripResource extends Resource
                     ->required(),
 
                 Forms\Components\Select::make('status')
-                            ->options([
-                                'planned' => 'planned',
-                                'on_going' => 'on_going',
-                                'completed' => 'completed',
-                                'failed' => 'failed',
-                            ])               ->default('planned')
+                    ->options([
+                        'planned' => 'planned',
+                        'on_going' => 'on_going',
+                        'completed' => 'completed',
+                        'failed' => 'failed',
+                    ])->default('planned')
                     ->required(),
             ])->columns(3),
 
@@ -105,7 +102,7 @@ class TripResource extends Resource
                 Forms\Components\Select::make('store_ids')
                     ->label('Toko dalam trip')
                     ->multiple()
-                    ->options(fn() => Store::query()->orderBy('name')->pluck('name', 'id'))
+                    ->options(fn () => Store::query()->orderBy('name')->pluck('name', 'id'))
                     ->searchable()
                     ->required()
                     ->helperText('Tidak boleh pilih toko yang sama dalam 1 trip.'),
@@ -139,9 +136,10 @@ class TripResource extends Resource
                         $total = $record->stops_total ?? 0;
                         $done = $record->stops_done ?? 0;
                         $skipped = $record->stops_skipped ?? 0;
-                        return "{$done}/{$total} (" . ($done + $skipped) . ")";
+
+                        return "{$done}/{$total} (".($done + $skipped).')';
                     })
-                    ->description(fn($record) => ($record->stops_remaining ?? 0) . " sisa • " . ($record->stops_skipped ?? 0) . " reject")
+                    ->description(fn ($record) => ($record->stops_remaining ?? 0).' sisa • '.($record->stops_skipped ?? 0).' reject')
                     ->sortable(query: function (Builder $query, string $direction): Builder {
                         return $query->orderBy('stops_done', $direction);
                     }),
@@ -158,12 +156,11 @@ class TripResource extends Resource
             ->modifyQueryUsing(function ($query) {
                 return $query->with('driver')->withCount([
                     'stops as stops_total',
-                    'stops as stops_done' => fn($q) => $q->where('status', 'done'),
-                    'stops as stops_skipped' => fn($q) => $q->whereIn('status', ['skipped', 'rejected']),
-                    'stops as stops_remaining' => fn($q) => $q->whereIn('status', ['pending', 'arrived']),
+                    'stops as stops_done' => fn ($q) => $q->where('status', 'done'),
+                    'stops as stops_skipped' => fn ($q) => $q->whereIn('status', ['skipped', 'rejected']),
+                    'stops as stops_remaining' => fn ($q) => $q->whereIn('status', ['pending', 'arrived']),
                 ]);
             })
-
 
             ->filters([
                 //
@@ -186,7 +183,6 @@ class TripResource extends Resource
             \App\Filament\Resources\TripResource\RelationManagers\StopsRelationManager::class,
         ];
     }
-
 
     public static function getPages(): array
     {

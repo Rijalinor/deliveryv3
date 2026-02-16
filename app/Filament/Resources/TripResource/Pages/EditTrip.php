@@ -3,9 +3,9 @@
 namespace App\Filament\Resources\TripResource\Pages;
 
 use App\Filament\Resources\TripResource;
+use App\Models\TripStop;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
-use App\Models\TripStop;
 
 class EditTrip extends EditRecord
 {

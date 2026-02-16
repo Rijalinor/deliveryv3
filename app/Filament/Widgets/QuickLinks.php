@@ -8,5 +8,5 @@ class QuickLinks extends Widget
 {
     protected static string $view = 'filament.widgets.quick-links';
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 }

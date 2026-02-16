@@ -3,10 +3,9 @@
 namespace App\Filament\Driver\Resources\DriverTripResource\Pages;
 
 use App\Filament\Driver\Resources\DriverTripResource;
-use Filament\Actions;
+use App\Services\TripAssignmentService;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
-use App\Services\TripAssignmentService;
 use Illuminate\Support\Facades\Auth;
 
 class CreateDriverTrip extends CreateRecord
@@ -23,16 +22,16 @@ class CreateDriverTrip extends CreateRecord
             // 2. Prepare Trip Data
             $data['driver_id'] = Auth::id();
             $data['status'] = 'planned';
-            $data['gi_number'] = is_array($giInput) ? implode(', ', $giInput) : (string)$giInput;
+            $data['gi_number'] = is_array($giInput) ? implode(', ', $giInput) : (string) $giInput;
 
             // 3. Create Trip
             $trip = static::getModel()::create($data);
 
             // 4. Process GIs (Generate Stops)
-            if (!empty($giInput)) {
-                $service = new TripAssignmentService();
-                $giNumbers = is_array($giInput) ? $giInput : explode(',', (string)$giInput);
-                
+            if (! empty($giInput)) {
+                $service = new TripAssignmentService;
+                $giNumbers = is_array($giInput) ? $giInput : explode(',', (string) $giInput);
+
                 // This might throw Exception, which will rollback transaction
                 $service->processGiBasedTrip($trip, $giNumbers);
             }
