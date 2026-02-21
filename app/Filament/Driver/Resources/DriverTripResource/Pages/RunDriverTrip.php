@@ -179,7 +179,7 @@ class RunDriverTrip extends Page
             Notification::make()->title('Status: Arrived')->success()->send();
 
             // ✅ VOICE ALERT: Single Arrived
-            $this->dispatch('voice-alert', message: "Tiba di " . $stop->store->name . ". Silakan antar barang.");
+            $this->dispatch('voice-alert', message: 'Tiba di '.$stop->store->name.'. Silakan antar barang.');
         }
 
         $this->form->fill([
@@ -283,7 +283,7 @@ class RunDriverTrip extends Page
 
                 if ($firstInRange && $firstInRange->created_at->diffInSeconds(now()) >= $dwellTime) {
                     \Illuminate\Support\Facades\Log::info("Auto-Arrived Triggered for Stop #{$stop->id} (Dwell: {$dwellTime}s)");
-                    
+
                     // ✅ CHAIN ARRIVAL: Tandai SEMUA toko dalam cluster sebagai arrived
                     $cluster = $this->getNearbyStops();
                     foreach ($cluster as $s) {
@@ -295,10 +295,10 @@ class RunDriverTrip extends Page
                         }
                     }
 
-                    Notification::make()->title("Sudah Sampai di Lokasi Cluster (" . $cluster->count() . " Toko)")->success()->send();
-                    
+                    Notification::make()->title('Sudah Sampai di Lokasi Cluster ('.$cluster->count().' Toko)')->success()->send();
+
                     // ✅ VOICE ALERT: Cluster
-                    $this->dispatch('voice-alert', message: "Memasuki kawasan pasar. Ada " . $cluster->count() . " toko di sini. Silakan mulai pengiriman.");
+                    $this->dispatch('voice-alert', message: 'Memasuki kawasan pasar. Ada '.$cluster->count().' toko di sini. Silakan mulai pengiriman.');
 
                     $this->refreshTrip();
                     $this->dispatchMapToActiveStop();
@@ -325,7 +325,7 @@ class RunDriverTrip extends Page
         Notification::make()->title('Stop selesai (Done)')->success()->send();
 
         // ✅ VOICE ALERT: Stop Done
-        $this->dispatch('voice-alert', message: "Pengiriman di " . $stop->store->name . " selesai. Lanjutkan ke tujuan berikutnya.");
+        $this->dispatch('voice-alert', message: 'Pengiriman di '.$stop->store->name.' selesai. Lanjutkan ke tujuan berikutnya.');
 
         $this->form->fill([
             'skip_reason' => null,

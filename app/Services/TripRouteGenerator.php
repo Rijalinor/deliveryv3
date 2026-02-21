@@ -43,8 +43,8 @@ class TripRouteGenerator
         // 1. Optimization (Vrp / TSP) - Mencari urutan terbaik (Fokus Jarak/Geografis + Time Windows)
         $jobs = [];
         foreach ($stops as $stop) {
-            $storeServiceSec = ($stop->store->service_minutes !== null) 
-                ? ($stop->store->service_minutes * 60) 
+            $storeServiceSec = ($stop->store->service_minutes !== null)
+                ? ($stop->store->service_minutes * 60)
                 : $defaultServiceSec;
 
             $openSec = $this->timeToSec($stop->store->open_time ?? '08:00:00');
@@ -55,7 +55,7 @@ class TripRouteGenerator
                 'location' => [(float) $stop->store->lng, (float) $stop->store->lat],
                 'service' => $storeServiceSec,
                 'time_windows' => [
-                    [$openSec, $closeSec]
+                    [$openSec, $closeSec],
                 ],
             ];
         }
@@ -104,7 +104,7 @@ class TripRouteGenerator
                             'updated_at' => now(),
                         ]);
                     $assignedStopIds[] = $stop->id;
-                    
+
                     $reason = data_get($u, 'reason', 'Unreachable');
                     \Illuminate\Support\Facades\Log::warning("Stop #{$stop->id} ({$stop->store->name}) UNASSIGNED oleh ORS. Reason: {$reason}");
                 }
@@ -147,7 +147,7 @@ class TripRouteGenerator
             // Pastikan ETA tidak mendahului jam buka (tunggu kalau kepagian)
             $openSec = $this->timeToSec($stop->store->open_time ?? '08:00:00');
             $actualArrivalSec = max($arrivalSec, $openSec);
-            
+
             $closeSec = $this->timeToSec($stop->store->close_time ?? '23:59:00');
 
             $stop->update([
@@ -156,10 +156,10 @@ class TripRouteGenerator
             ]);
 
             // Waktu keberangkatan dari toko ini: Kedatangan Aktif + Waktu Layanan
-            $storeServiceSec = ($stop->store->service_minutes !== null) 
-                ? ($stop->store->service_minutes * 60) 
+            $storeServiceSec = ($stop->store->service_minutes !== null)
+                ? ($stop->store->service_minutes * 60)
                 : $defaultServiceSec;
-                
+
             $currentSec = $actualArrivalSec + $storeServiceSec;
         }
 

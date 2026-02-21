@@ -15,7 +15,7 @@ class TripStatsOverview extends BaseWidget
         $driverId = Auth::id();
 
         $totalTrips = Trip::where('driver_id', $driverId)->count();
-        
+
         $completedStops = TripStop::whereHas('trip', function ($query) use ($driverId) {
             $query->where('driver_id', $driverId);
         })->where('status', 'done')->count();
@@ -36,7 +36,7 @@ class TripStatsOverview extends BaseWidget
                 ->description('Total toko yang sudah selesai')
                 ->descriptionIcon('heroicon-m-check-badge')
                 ->color('success'),
-            Stat::make('Skor Performa', $score . '%')
+            Stat::make('Skor Performa', $score.'%')
                 ->description('Persentase keberhasilan')
                 ->descriptionIcon('heroicon-m-star')
                 ->color($score >= 80 ? 'success' : ($score >= 50 ? 'warning' : 'danger')),

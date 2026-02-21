@@ -145,8 +145,8 @@ class TripResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('estimated_fuel_cost')
                     ->label('Estimasi BBM')
-                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 0, ',', '.'))
-                    ->description(fn ($record) => ($record->total_distance_m ? round($record->total_distance_m / 1000, 1) . ' km' : '0 km'))
+                    ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 0, ',', '.'))
+                    ->description(fn ($record) => ($record->total_distance_m ? round($record->total_distance_m / 1000, 1).' km' : '0 km'))
                     ->color('success')
                     ->sortable()
                     ->toggleable(),
