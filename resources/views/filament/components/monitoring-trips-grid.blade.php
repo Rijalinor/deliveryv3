@@ -192,18 +192,19 @@ L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                         map.fitBounds(bounds, { padding: [10, 10] });
                     }
 
-                    // Marker Driver
+                    // Marker Driver (🚛 Emoji)
                     if (t.driverLat && t.driverLng) {
-                        L.circleMarker([t.driverLat, t.driverLng], {
-                            radius: 8,
-                            fillColor: "#f97316", // Orange
-                            color: "#ffffff",
-                            weight: 2,
-                            opacity: 1,
-                            fillOpacity: 0.9
-                        })
-                        .addTo(map)
-                        .bindPopup('<b>' + t.driverName + '</b><br>Update: ' + t.driverTime);
+                        const driverIcon = L.divIcon({
+                            html: '<div style="font-size: 24px; line-height: 1;">🚛</div>',
+                            className: 'driver-emoji-marker-admin',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 25],
+                            popupAnchor: [0, -25]
+                        });
+
+                        L.marker([t.driverLat, t.driverLng], { icon: driverIcon })
+                            .addTo(map)
+                            .bindPopup('<b>' + t.driverName + '</b><br>Update: ' + t.driverTime);
                     }
                 }
 

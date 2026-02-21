@@ -30,6 +30,16 @@
 
     const mapId = @json($mapId);
     let currentDest = @json($dest);
+    let driverMarker = null;
+
+    // Custom Icon untuk Driver (🚛 Emoji)
+    const driverIcon = L.divIcon({
+        html: '<div style="font-size: 32px; line-height: 1;">🚛</div>',
+        className: 'driver-emoji-marker',
+        iconSize: [40, 40],
+        iconAnchor: [20, 30],
+        popupAnchor: [0, -30]
+    });
 
     function ensureMap() {
         const el = document.getElementById(mapId);
@@ -65,18 +75,73 @@
         obj.marker.setLatLng([dest.lat, dest.lng]);
         obj.marker.setPopupContent(`<b>${dest.name}</b><br/>${dest.address ?? ''}`);
 
-        obj.map.setView([dest.lat, dest.lng], obj.map.getZoom());
+        // Update view if driver marker doesn't exist yet
+        if (!driverMarker) {
+            obj.map.setView([dest.lat, dest.lng], obj.map.getZoom());
+        }
         setTimeout(() => obj.map.invalidateSize(), 50);
+    }
+
+    let driverAnimId = null;
+    function animateMarker(marker, newPos) {
+        if (!marker) return;
+        if (driverAnimId) cancelAnimationFrame(driverAnimId);
+        
+        const startPos = marker.getLatLng();
+        const startTime = performance.now();
+        const duration = 2000; // 2 seconds animation
+
+        function step(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // Linear Interpolation (Lerp)
+            const lat = startPos.lat + (newPos.lat - startPos.lat) * progress;
+            const lng = startPos.lng + (newPos.lng - startPos.lng) * progress;
+
+            marker.setLatLng([lat, lng]);
+
+            if (progress < 1) {
+                driverAnimId = requestAnimationFrame(step);
+            } else {
+                driverAnimId = null;
+            }
+        }
+        driverAnimId = requestAnimationFrame(step);
+    }
+
+    function updateDriverLocation(lat, lng) {
+        const obj = ensureMap();
+        if (!obj) return;
+
+        const newLatLng = L.latLng(lat, lng);
+
+        if (!driverMarker) {
+            driverMarker = L.marker(newLatLng, { icon: driverIcon }).addTo(obj.map)
+                .bindPopup('<b>Lokasi Saya</b>');
+        } else {
+            // ✅ PAKAI ANIMASI MULUS
+            animateMarker(driverMarker, newLatLng);
+        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         ensureMap();
     });
 
-    // ✅ event dari Livewire (yang membawa koordinat toko aktif terbaru)
+    // ✅ event dari Livewire (koordinat toko)
     window.addEventListener('run-trip-refresh', (e) => {
-        const dest = e?.detail?.dest ?? null;
+        const dest = e?.detail?.dest ?? (e?.detail?.[0]?.dest) ?? null;
         updateTo(dest);
+    });
+
+    // ✅ event lokasi driver
+    window.addEventListener('driver-location-updated', (e) => {
+        const lat = e?.detail?.lat ?? (e?.detail?.[0]?.lat);
+        const lng = e?.detail?.lng ?? (e?.detail?.[0]?.lng);
+        if (lat && lng) {
+            updateDriverLocation(lat, lng);
+        }
     });
 })();
 </script>

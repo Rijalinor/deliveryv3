@@ -25,7 +25,7 @@ class CleanupDriverLocations extends Command
      */
     public function handle(): void
     {
-        $days = 7;
+        $days = (int) config('delivery.driver_location_retention_days', 7);
         $count = \App\Models\DriverLocation::where('created_at', '<', now()->subDays($days))->delete();
 
         $this->info("Deleted {$count} driver location records older than {$days} days.");

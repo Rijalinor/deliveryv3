@@ -11,12 +11,14 @@ class Store extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name', 'address', 'lat', 'lng', 'close_time',
+        'name', 'address', 'lat', 'lng', 'open_time', 'close_time', 'service_minutes',
     ];
 
     protected $casts = [
         'lat' => 'float',
         'lng' => 'float',
-        'close_time' => 'string', // TIME dari DB sebagai string "HH:MM:SS"
+        'open_time' => 'string',
+        'close_time' => 'string',
+        'service_minutes' => 'integer',
     ];
 }

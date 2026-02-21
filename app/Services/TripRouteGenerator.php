@@ -31,24 +31,32 @@ class TripRouteGenerator
 
         // === Konfigurasi Aturan ===
         $bufferMinutes = 10;
-        $serviceMinutes = (int) ($trip->service_minutes ?? 5);
         $trafficFactor = (float) ($trip->traffic_factor ?? 1.30);
 
         $bufferSec = $bufferMinutes * 60;
-        $serviceSec = $serviceMinutes * 60;
+        $defaultServiceSec = (int) ($trip->service_minutes ?? 5) * 60;
 
         $startTime = $trip->start_time ?? '08:00:00';
         $startTimeSec = $this->timeToSec($startTime);
         $startCoord = [(float) $trip->start_lng, (float) $trip->start_lat];
 
-        // 1. Optimization (Vrp / TSP) - Mencari urutan terbaik (Fokus Jarak/Geografis)
+        // 1. Optimization (Vrp / TSP) - Mencari urutan terbaik (Fokus Jarak/Geografis + Time Windows)
         $jobs = [];
         foreach ($stops as $stop) {
+            $storeServiceSec = ($stop->store->service_minutes !== null) 
+                ? ($stop->store->service_minutes * 60) 
+                : $defaultServiceSec;
+
+            $openSec = $this->timeToSec($stop->store->open_time ?? '08:00:00');
+            $closeSec = $this->timeToSec($stop->store->close_time ?? '23:59:00');
+
             $jobs[] = [
                 'id' => (int) $stop->id,
                 'location' => [(float) $stop->store->lng, (float) $stop->store->lat],
-                'service' => $serviceSec,
-                // Kita hapus time_windows agar ORS bebas mencari urutan terpendek secara geografis
+                'service' => $storeServiceSec,
+                'time_windows' => [
+                    [$openSec, $closeSec]
+                ],
             ];
         }
 
@@ -74,7 +82,6 @@ class TripRouteGenerator
 
                 $stop = $stops->firstWhere('id', (int) $jobId);
                 if ($stop) {
-                    // Use direct DB update to ensure it's persisted
                     \Illuminate\Support\Facades\DB::table('trip_stops')
                         ->where('id', $stop->id)
                         ->update([
@@ -86,7 +93,6 @@ class TripRouteGenerator
             }
 
             // 2. Handle unassigned (jika ada yang tidak bisa dijangkau/unreachable)
-            // Tetap beri sequence agar muncul di daftar trip, tapi di urutan terakhir
             foreach ($unassigned as $u) {
                 $jobId = data_get($u, 'id');
                 $stop = $stops->firstWhere('id', (int) $jobId);
@@ -98,7 +104,9 @@ class TripRouteGenerator
                             'updated_at' => now(),
                         ]);
                     $assignedStopIds[] = $stop->id;
-                    \Illuminate\Support\Facades\Log::warning("Stop #{$stop->id} ({$stop->store->name}) ditandai unassigned oleh ORS. Mungkin jalan tidak bisa dilalui kendaraan.");
+                    
+                    $reason = data_get($u, 'reason', 'Unreachable');
+                    \Illuminate\Support\Facades\Log::warning("Stop #{$stop->id} ({$stop->store->name}) UNASSIGNED oleh ORS. Reason: {$reason}");
                 }
             }
         });
@@ -136,15 +144,23 @@ class TripRouteGenerator
             $totalDistance += $segmentDistance;
             $arrivalSec = $currentSec + $segmentDuration;
 
+            // Pastikan ETA tidak mendahului jam buka (tunggu kalau kepagian)
+            $openSec = $this->timeToSec($stop->store->open_time ?? '08:00:00');
+            $actualArrivalSec = max($arrivalSec, $openSec);
+            
             $closeSec = $this->timeToSec($stop->store->close_time ?? '23:59:00');
 
             $stop->update([
-                'eta_at' => $this->etaAtFromTripDate($trip->start_date, $arrivalSec),
+                'eta_at' => $this->etaAtFromTripDate($trip->start_date, $actualArrivalSec),
                 'close_at' => $this->etaAtFromTripDate($trip->start_date, $closeSec),
             ]);
 
-            // Waktu keberangkatan dari toko ini: Kedatangan + Waktu Layanan
-            $currentSec = $arrivalSec + $serviceSec;
+            // Waktu keberangkatan dari toko ini: Kedatangan Aktif + Waktu Layanan
+            $storeServiceSec = ($stop->store->service_minutes !== null) 
+                ? ($stop->store->service_minutes * 60) 
+                : $defaultServiceSec;
+                
+            $currentSec = $actualArrivalSec + $storeServiceSec;
         }
 
         // Hitung juga jalur pulang ke gudang agar total distance/duration akurat

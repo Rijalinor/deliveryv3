@@ -53,4 +53,21 @@ class Trip extends Model
     {
         return $this->hasManyThrough(TripInvoice::class, TripStop::class);
     }
+
+    /**
+     * Estimasi Biaya BBM (Manusiawi)
+     */
+    public function getEstimatedFuelCostAttribute(): float
+    {
+        $distanceKm = ($this->total_distance_m ?? 0) / 1000;
+        $kmPerLiter = (float) config('delivery.fuel_km_per_liter', 10);
+        $pricePerLiter = (float) config('delivery.fuel_price_per_liter', 13000);
+        $safetyFactor = (float) config('delivery.fuel_safety_factor', 1.20);
+
+        if ($kmPerLiter <= 0) {
+            return 0;
+        }
+
+        return ($distanceKm / $kmPerLiter) * $pricePerLiter * $safetyFactor;
+    }
 }

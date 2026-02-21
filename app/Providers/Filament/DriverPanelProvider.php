@@ -48,7 +48,8 @@ class DriverPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Driver/Widgets'), for: 'App\\Filament\\Driver\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                \App\Filament\Driver\Widgets\TripStatsOverview::class,
+                \App\Filament\Driver\Widgets\DriverRankingWidget::class,
             ])
             ->authGuard('web')
 
@@ -66,7 +67,10 @@ class DriverPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            ->renderHook('panels::head.end', fn (): string => <<<'HTML'
+            ->renderHook('panels::head.end', fn (): string => \Illuminate\Support\Facades\Blade::render(<<<'HTML'
+                <!-- Accessibility Theme -->
+                @vite('resources/css/filament/driver/theme.css')
+
                 <!-- PWA Manifest -->
                 <link rel="manifest" href="/manifest.json">
                 <meta name="theme-color" content="#10b981">
@@ -82,6 +86,6 @@ class DriverPanelProvider extends PanelProvider
                         });
                     }
                 </script>
-            HTML);
+            HTML));
     }
 }

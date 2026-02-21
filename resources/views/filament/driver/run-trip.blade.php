@@ -54,116 +54,269 @@
     </div>
 
     @if(! $active)
-    <div class="relative overflow-hidden bg-gradient-to-br from-success-50 to-success-100 dark:from-success-950 dark:to-gray-900 border-2 border-success-200 dark:border-success-800 rounded-2xl p-8 text-center shadow-xl">
-        <div class="absolute top-0 right-0 w-64 h-64 bg-success-200/30 dark:bg-success-900/20 rounded-full -mr-32 -mt-32"></div>
-        <div class="absolute bottom-0 left-0 w-48 h-48 bg-success-300/20 dark:bg-success-800/10 rounded-full -ml-24 -mb-24"></div>
-        
+    <div class="relative overflow-hidden bg-white dark:bg-gray-900 border-4 border-success-500 rounded-3xl p-10 text-center shadow-2xl">
         <div class="relative z-10">
-            <div class="mb-6 flex justify-center">
-                <div class="p-4 bg-success-100 dark:bg-success-900/50 rounded-full">
-                    <x-heroicon-o-check-circle class="w-20 h-20 text-success-600 dark:text-success-400" />
+            <div class="mb-8 flex justify-center">
+                <div class="p-6 bg-success-100 dark:bg-success-900/50 rounded-full">
+                    <x-heroicon-o-check-circle class="w-24 h-24 text-success-600 dark:text-success-400" />
                 </div>
             </div>
-            <h3 class="text-3xl font-bold mb-3 text-gray-900 dark:text-white">Trip Selesai!</h3>
-            <p class="text-gray-600 dark:text-gray-300 mb-8 text-lg">Semua pengiriman telah berhasil diselesaikan.</p>
+            <h3 class="text-4xl font-extrabold mb-4 text-gray-900 dark:text-white">SEMUA SELESAI!</h3>
+            <p class="text-xl text-gray-600 dark:text-white mb-6 font-bold">Hebat! Semua pesanan sudah diantar.</p>
+
+            {{-- Fuel Estimation Summary --}}
+            <div class="mb-10 p-6 bg-slate-50 dark:bg-slate-800 rounded-3xl border-2 border-slate-200 dark:border-slate-700 max-w-md mx-auto">
+                <div class="flex items-center justify-center gap-2 mb-2 text-slate-500 uppercase text-xs font-black tracking-widest">
+                    <x-heroicon-m-bolt class="w-4 h-4" />
+                    <span>Perkiraan Operasional</span>
+                </div>
+                <div class="text-3xl font-black text-slate-900 dark:text-white mb-1">
+                    Rp {{ number_format($trip->estimated_fuel_cost, 0, ',', '.') }}
+                </div>
+                <div class="text-sm font-bold text-slate-500">
+                    Estimasi BBM (~{{ round($trip->total_distance_m / 1000, 1) }} KM)
+                </div>
+                <div class="mt-4 text-[10px] text-slate-400 italic">
+                    *Nilai perkiraan, kondisi di lapangan mungkin berbeda.
+                </div>
+            </div>
             
-            <div class="flex flex-col gap-3 max-w-sm mx-auto">
-                <x-filament::button color="success" wire:click="finishTrip" size="xl" class="shadow-lg hover:shadow-xl transition-shadow">
-                    <x-heroicon-m-check class="w-5 h-5 mr-2" />
-                    Selesaikan Trip Ini
+            <div class="flex flex-col gap-4 max-w-md mx-auto">
+                <x-filament::button color="success" wire:click="finishTrip" size="xl" class="py-6 text-2xl font-black uppercase tracking-widest shadow-2xl hover:scale-105 transition-transform">
+                    SELESAIKAN TRIP
                 </x-filament::button>
-                <x-filament::button color="gray" tag="a" variant="outlined"
-                    href="{{ \App\Filament\Driver\Resources\DriverTripResource::getUrl('index') }}">
-                    <x-heroicon-m-arrow-left class="w-4 h-4 mr-2" />
-                    Kembali ke Daftar
+                <x-filament::button color="gray" tag="a" variant="outlined" size="xl"
+                    href="{{ \App\Filament\Driver\Resources\DriverTripResource::getUrl('index') }}" class="py-4 text-xl font-bold">
+                    KEMBALI KE DAFTAR
                 </x-filament::button>
             </div>
         </div>
     </div>
     @else
-    <div class="space-y-6">
+    @php
+        $cluster = $this->getNearbyStops();
+        $isCluster = $cluster->count() > 1;
+    @endphp
+
+    <div class="space-y-8">
+        {{-- VOICE ASSISTANT CONTROLS & SCRIPT --}}
+        <div class="flex justify-end mb-4" x-data="{ muted: localStorage.getItem('voice_muted') === 'true' }">
+            <button 
+                @click="muted = !muted; localStorage.setItem('voice_muted', muted); $dispatch('toggle-voice', { muted: muted })"
+                class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white dark:bg-gray-800 border-2 border-slate-100 dark:border-slate-700 shadow-sm hover:border-primary-500 transition-all"
+                :class="muted ? 'opacity-50' : 'opacity-100 border-primary-500'"
+            >
+                <template x-if="!muted">
+                    <span class="text-lg">🔊 <span class="text-xs font-bold uppercase tracking-wider ml-1 text-slate-600 dark:text-slate-400">Asisten Suara ON</span></span>
+                </template>
+                <template x-if="muted">
+                    <span class="text-lg">🔇 <span class="text-xs font-bold uppercase tracking-wider ml-1 text-slate-600 dark:text-slate-400">Asisten Suara OFF</span></span>
+                </template>
+            </button>
+        </div>
+
+        <script>
+            document.addEventListener('livewire:init', () => {
+                let isMuted = localStorage.getItem('voice_muted') === 'true';
+
+                document.addEventListener('toggle-voice', (e) => {
+                    isMuted = e.detail.muted;
+                });
+
+                Livewire.on('voice-alert', (event) => {
+                    if (isMuted) return;
+
+                    const message = event.message;
+                    const utterance = new SpeechSynthesisUtterance(message);
+                    utterance.lang = 'id-ID'; 
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+
+                    // Search for Indonesian voice
+                    const voices = window.speechSynthesis.getVoices();
+                    const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
+                    if (idVoice) utterance.voice = idVoice;
+
+                    window.speechSynthesis.cancel();
+                    window.speechSynthesis.speak(utterance);
+                });
+            });
+        </script>
+
         {{-- Map --}}
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+        <div id="map-container" class="bg-white dark:bg-gray-900 border-4 border-primary-500 rounded-3xl overflow-hidden shadow-2xl">
             @include('filament.driver.trip-map-single', ['trip' => $trip, 'stop' => $active])
         </div>
 
-        {{-- Enhanced Active Stop Card --}}
-        <div class="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-xl">
-            <div class="flex items-start gap-4 mb-5">
-                <div class="flex-shrink-0 bg-gradient-to-br from-primary-500 to-primary-600 text-white w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg">
-                    {{ $active->sequence }}
+        @if($isCluster)
+            {{-- MARKET MODE / CLUSTER VIEW --}}
+            <div class="bg-white dark:bg-gray-800 border-4 border-amber-400 rounded-3xl p-6 shadow-2xl overflow-hidden">
+                <div class="flex items-center gap-4 mb-6 pb-4 border-b-2 border-amber-100 dark:border-amber-900/50">
+                    <div class="p-3 bg-amber-100 dark:bg-amber-900/50 rounded-xl text-amber-700 dark:text-amber-400">
+                        <x-heroicon-m-building-storefront class="w-8 h-8" />
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black text-gray-900 dark:text-white uppercase leading-none">MODE PASAR / CLUSTER</h3>
+                        <p class="text-sm font-bold text-amber-600 uppercase tracking-widest mt-1">{{ $cluster->count() }} Toko Berdekatan</p>
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <h3 class="font-bold text-xl leading-tight text-gray-900 dark:text-white mb-1">{{ $active->store->name }}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                        <x-heroicon-m-map-pin class="w-4 h-4" />
-                        {{ $active->store->address }}
-                    </p>
+
+                <div class="space-y-4 mb-8">
+                    @foreach($cluster as $s)
+                        @php
+                            $isActiveItem = $s->id === $active->id;
+                            $itemStatus = $s->status;
+                        @endphp
+                        <div class="relative p-5 rounded-2xl border-2 {{ $isActiveItem ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30' : 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50' }} transition-all">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-lg {{ $isActiveItem ? 'bg-primary-600' : 'bg-slate-400' }} text-white flex items-center justify-center font-black text-xl">
+                                    {{ $s->sequence }}
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-bold text-lg {{ $isActiveItem ? 'text-primary-900 dark:text-white' : 'text-slate-600 dark:text-slate-400' }} uppercase">{{ $s->store->name }}</h4>
+                                    <p class="text-xs font-semibold text-slate-500 line-clamp-1 truncate">{{ $s->store->address }}</p>
+                                </div>
+                                <div class="text-right">
+                                    @if($itemStatus === 'arrived')
+                                        <span class="px-3 py-1 bg-success-500 text-white text-[10px] font-black rounded-full uppercase">Arrived</span>
+                                    @else
+                                        <span class="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-slate-500 text-[10px] font-black rounded-full uppercase">{{ $itemStatus }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                            
+                            @if($isActiveItem)
+                                <div class="absolute -right-2 top-1/2 -translate-y-1/2">
+                                    <div class="w-4 h-8 bg-primary-500 rounded-l-full"></div>
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Cluster Actions (Fokus ke Active Stop dalam cluster) --}}
+                <div class="space-y-4">
+                    <div class="p-4 bg-primary-600 text-white rounded-2xl font-black text-center text-xl shadow-lg uppercase tracking-wider">
+                        Sedang Diproses: {{ $active->store->name }}
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4">
+                        @if($active->status === 'pending')
+                            <x-filament::button size="xl" color="success" wire:click="markArrived" icon="heroicon-m-check-circle" class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-success-700">
+                                SAYA SUDAH SAMPAI
+                            </x-filament::button>
+                        @else
+                            <x-filament::button size="xl" color="success" wire:click="markDone" icon="heroicon-m-check-badge" class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-success-700">
+                                SELESAI ANTAR
+                            </x-filament::button>
+                        @endif
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <x-filament::button variant="outlined" color="warning" wire:click="postponeStop" class="py-4 text-sm font-black uppercase tracking-tighter border-2 rounded-xl">
+                            <x-heroicon-m-arrow-path class="w-5 h-5 mr-1" />
+                            TUNDA
+                        </x-filament::button>
+
+                        <x-filament::button variant="outlined" color="danger" wire:click="markRejected" class="py-4 text-sm font-black uppercase tracking-tighter border-2 rounded-xl">
+                            <x-heroicon-m-x-circle class="w-5 h-5 mr-1" />
+                            REJECT
+                        </x-filament::button>
+                    </div>
                 </div>
             </div>
-
-            <div class="grid grid-cols-2 gap-3 mb-6">
-                <div class="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-xl border border-blue-200 dark:border-blue-800">
-                    <div class="flex items-center gap-2 mb-1">
-                        <x-heroicon-m-clock class="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        <span class="block text-xs text-blue-600 dark:text-blue-400 uppercase font-bold">ETA</span>
+        @else
+            {{-- STANDARD MODE (SINGLE STOP) --}}
+            <div class="bg-white dark:bg-gray-800 border-4 border-slate-200 dark:border-slate-700 rounded-3xl p-8 shadow-2xl">
+                {{-- Stop Number & Store Name --}}
+                <div class="flex items-center gap-6 mb-8 border-b-4 border-slate-100 dark:border-slate-700 pb-6">
+                    <div class="flex-shrink-0 bg-primary-600 text-white w-20 h-20 rounded-2xl flex items-center justify-center font-black text-4xl shadow-xl">
+                        {{ $active->sequence }}
                     </div>
-                    <span class="font-bold text-lg text-blue-900 dark:text-blue-100">{{ optional($active->eta_at)->format('H:i') ?? '--:--' }}</span>
+                    <div class="flex-1">
+                        <h3 class="font-black text-4xl leading-tight text-gray-900 dark:text-white uppercase mb-2">{{ $active->store->name }}</h3>
+                        <div class="inline-flex items-center gap-2 px-6 py-2 bg-slate-100 dark:bg-slate-700 rounded-full">
+                            <x-heroicon-m-map-pin class="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                            <span class="text-xl font-bold text-gray-700 dark:text-white tracking-tight">{{ $active->store->address }}</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="p-4 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 rounded-xl border border-amber-200 dark:border-amber-800">
-                    <div class="flex items-center gap-2 mb-1">
-                        <x-heroicon-m-clock class="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                        <span class="block text-xs text-amber-600 dark:text-amber-400 uppercase font-bold">Jam Tutup</span>
+
+                {{-- High Contrast Info Grid --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900/50 rounded-xl border border-blue-200 dark:border-blue-700 flex items-center gap-3">
+                        <x-heroicon-m-clock class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                        <div>
+                            <span class="block text-[10px] font-bold text-blue-600 dark:text-blue-300 uppercase tracking-wider">ETA</span>
+                            <span class="font-bold text-lg text-blue-900 dark:text-white">{{ optional($active->eta_at)->format('H:i') ?? '--:--' }}</span>
+                        </div>
                     </div>
-                    <span class="font-bold text-lg text-amber-900 dark:text-amber-100">{{ optional($active->close_at)->format('H:i') ?? '--:--' }}</span>
+                    <div class="p-4 bg-amber-50 dark:bg-amber-900/50 rounded-xl border border-amber-200 dark:border-amber-700 flex items-center gap-3">
+                        <x-heroicon-m-exclamation-triangle class="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                        <div>
+                            <span class="block text-[10px] font-bold text-amber-600 dark:text-amber-300 uppercase tracking-wider">Toko Tutup</span>
+                            <span class="font-bold text-xl text-amber-900 dark:text-white">{{ optional($active->store->close_time)->format('H:i') ?? '--:--' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Main Giant Actions --}}
+                <div class="space-y-4">
+                    {{-- Primary Action Row --}}
+                    <div class="grid grid-cols-1 gap-4">
+                        <x-filament::button
+                            size="xl"
+                            color="primary"
+                            tag="a"
+                            :href="$this->gmapsUrl()"
+                            target="_blank"
+                            icon="heroicon-m-map"
+                            class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl">
+                            BUKA PETA
+                        </x-filament::button>
+
+                        @if($active->status === 'pending')
+                            <x-filament::button size="xl" color="success" wire:click="markArrived" icon="heroicon-m-check-circle" class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-success-700">
+                                SAYA SUDAH SAMPAI
+                            </x-filament::button>
+                        @else
+                            <x-filament::button size="xl" color="success" wire:click="markDone" icon="heroicon-m-check-badge" class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-success-700">
+                                PENGIRIMAN SELESAI
+                            </x-filament::button>
+                        @endif
+                    </div>
+
+                    {{-- Secondary Action Row (Grouped) --}}
+                    <div class="grid grid-cols-2 gap-4">
+                        <x-filament::button variant="outlined" color="warning" wire:click="postponeStop" class="py-4 text-sm font-black uppercase tracking-tighter border-2 rounded-xl">
+                            <x-heroicon-m-arrow-path class="w-5 h-5 mr-1" />
+                            TUNDA
+                        </x-filament::button>
+
+                        <x-filament::button variant="outlined" color="danger" wire:click="markRejected" class="py-4 text-sm font-black uppercase tracking-tighter border-2 rounded-xl">
+                            <x-heroicon-m-x-circle class="w-5 h-5 mr-1" />
+                            REJECT
+                        </x-filament::button>
+                    </div>
                 </div>
             </div>
+        @endif
 
-            {{-- Primary Actions --}}
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 mb-4">
-                <x-filament::button
-                    size="xl"
-                    color="gray"
-                    tag="a"
-                    :href="$this->gmapsUrl()"
-                    target="_blank"
-                    icon="heroicon-m-map"
-                    class="w-full shadow-lg hover:shadow-xl transition-shadow">
-                    Navigasi
-                </x-filament::button>
-
-                @if($active->status === 'pending')
-                    <x-filament::button size="xl" color="warning" wire:click="markArrived" icon="heroicon-m-check-circle" class="w-full shadow-lg hover:shadow-xl transition-shadow">
-                        Arrived
-                    </x-filament::button>
-                @else
-                    <div class="flex items-center justify-center p-4 bg-gradient-to-r from-success-50 to-success-100 dark:from-success-950 dark:to-success-900 text-success-700 dark:text-success-300 rounded-xl border-2 border-success-200 dark:border-success-800 font-bold text-sm shadow-inner">
-                        <x-heroicon-m-check-circle class="w-5 h-5 mr-2" />
-                        Sudah di Lokasi
-                    </div>
-                @endif
-            </div>
-
-            {{-- Secondary Actions --}}
-            <x-filament::button variant="outlined" color="danger" wire:click="markRejected" class="w-full text-sm uppercase font-bold">
-                <x-heroicon-m-x-circle class="w-4 h-4 mr-2" />
-                Gagal / Reject
-            </x-filament::button>
-        </div>
-
-        {{-- Laporan Kendala --}}
-        <x-filament::section>
+        {{-- Laporan Kendala - Extra Large --}}
+        <x-filament::section collapsible class="border-4 border-slate-200 rounded-3xl overflow-hidden shadow-xl">
             <x-slot name="heading">
-                Laporan Kendala (Opsional)
+                <span class="text-2xl font-black uppercase text-slate-700 dark:text-slate-200">Klik Jika Ada Masalah</span>
             </x-slot>
             
-            {{ $this->form }}
+            <div class="p-2">
+                {{ $this->form }}
+            </div>
         </x-filament::section>
     </div>
     @endif
 
     {{-- Refresh --}}
-    <div wire:poll.15s="refreshTrip"></div>
+    <div wire:poll.30s="refreshTrip"></div>
 
     @vite('resources/js/capacitor-location.js')
 
@@ -188,7 +341,7 @@
                 try {
                     await tracker.startTracking((position) => {
                         const now = Date.now();
-                        if (window.__driverGeoLastSent && now - window.__driverGeoLastSent < 5000) {
+                        if (window.__driverGeoLastSent && now - window.__driverGeoLastSent < 10000) {
                             return;
                         }
                         window.__driverGeoLastSent = now;
@@ -226,7 +379,7 @@
                 window.__driverGeoWatchId = navigator.geolocation.watchPosition(
                     (pos) => {
                         const now = Date.now();
-                        if (window.__driverGeoLastSent && now - window.__driverGeoLastSent < 5000) {
+                        if (window.__driverGeoLastSent && now - window.__driverGeoLastSent < 10000) {
                             return;
                         }
                         window.__driverGeoLastSent = now;

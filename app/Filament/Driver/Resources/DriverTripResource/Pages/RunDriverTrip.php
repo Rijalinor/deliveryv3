@@ -177,6 +177,9 @@ class RunDriverTrip extends Page
             ]);
 
             Notification::make()->title('Status: Arrived')->success()->send();
+
+            // ✅ VOICE ALERT: Single Arrived
+            $this->dispatch('voice-alert', message: "Tiba di " . $stop->store->name . ". Silakan antar barang.");
         }
 
         $this->form->fill([
@@ -187,6 +190,36 @@ class RunDriverTrip extends Page
         $this->refreshTrip();
         $this->dispatchMapToActiveStop();
         // untuk refresh map
+    }
+
+    public function getNearbyStops()
+    {
+        $active = $this->activeStop();
+        if (! $active || ! $active->store) {
+            return collect();
+        }
+
+        // Cari toko lain yang jaraknya < 50m dari toko aktif saat ini
+        // Dan statusnya masih pending/arrived
+        return $this->record->stops()
+            ->whereIn('status', ['pending', 'arrived'])
+            ->with('store')
+            ->get()
+            ->filter(function ($stop) use ($active) {
+                if ($stop->id === $active->id) {
+                    return true;
+                }
+
+                $dist = $this->distanceMeters(
+                    (float) $active->store->lat,
+                    (float) $active->store->lng,
+                    (float) $stop->store->lat,
+                    (float) $stop->store->lng
+                );
+
+                return $dist <= 50; // Radius cluster 50 meter
+            })
+            ->sortBy('sequence');
     }
 
     public function updateDriverLocation(float $lat, float $lng): void
@@ -202,10 +235,12 @@ class RunDriverTrip extends Page
             return;
         }
 
-        $radius = (int) config('delivery.auto_arrive_radius_meters', 100);
+        $arrivalRadius = (int) config('delivery.arrival_radius_meters', 30);
+        $departureRadius = (int) config('delivery.departure_radius_meters', 150);
+        $dwellTime = (int) config('delivery.dwell_time_seconds', 15);
         $distance = $this->distanceMeters($lat, $lng, $destLat, $destLng);
 
-        \Illuminate\Support\Facades\Log::info("Driver Loc: {$lat}, {$lng} | Dest: {$destLat}, {$destLng} | Dist: {$distance}m | Radius: {$radius}m | Status: {$stop->status}");
+        \Illuminate\Support\Facades\Log::info("Driver Loc: {$lat}, {$lng} | Dest: {$destLat}, {$destLng} | Dist: {$distance}m | ArrR: {$arrivalRadius}m | DepR: {$departureRadius}m | Status: {$stop->status}");
 
         // Simpan riwayat ke database
         \App\Models\DriverLocation::create([
@@ -215,41 +250,60 @@ class RunDriverTrip extends Page
             'lng' => $lng,
         ]);
 
-        // ✅ Simpan posisi terakhir ke tabel trips agar monitoring admin cepat (tanpa scan tabel history)
+        // ✅ Simpan posisi terakhir ke tabel trips agar monitoring admin cepat
         $this->record->update([
             'current_lat' => $lat,
             'current_lng' => $lng,
         ]);
 
-        if ($distance > $radius) {
-            // Logic Auto-Done: Kalau status sudah 'arrived' dan menjauh > radius -> tandai DONE
-            if ($stop->status === 'arrived') {
-                \Illuminate\Support\Facades\Log::info("Auto-Done Triggered for Stop #{$stop->id}");
-                $stop->update([
-                    'status' => 'done',
-                    'done_at' => now(),
-                ]);
+        // Kirim lokasi driver ke map UI
+        $this->dispatch('driver-location-updated', lat: $lat, lng: $lng);
 
-                Notification::make()->title('Stop selesai (Auto-Done)')->success()->send();
-                $this->refreshTrip();
-                $this->dispatchMapToActiveStop();
+        // Logic Auto-Done: Pakai departureRadius (lebih lebar)
+        if ($stop->status === 'arrived') {
+            if ($distance > $departureRadius) {
+                \Illuminate\Support\Facades\Log::info("Auto-Done Triggered for Stop #{$stop->id}");
+                $this->markDone();
             }
 
             return;
         }
 
-        // Logic Auto-Arrived
         if ($stop->status === 'pending') {
-            \Illuminate\Support\Facades\Log::info("Auto-Arrived Triggered for Stop #{$stop->id}");
-            $stop->update([
-                'status' => 'arrived',
-                'arrived_at' => $stop->arrived_at ?? now(),
-            ]);
+            if ($distance <= $arrivalRadius) {
+                // Cek riwayat untuk memastikan driver benar-benar stop, bukan lewat doang (dwell time)
+                // Cari lokasi pertama dalam radius ini dalam periode dwell time
+                $firstInRange = \App\Models\DriverLocation::where('trip_id', $this->record->id)
+                    ->where('driver_id', auth()->id())
+                    ->where('created_at', '>=', now()->subSeconds($dwellTime * 2))
+                    ->orderBy('created_at', 'asc')
+                    ->get()
+                    ->filter(fn ($loc) => $this->distanceMeters($loc->lat, $loc->lng, $destLat, $destLng) <= $arrivalRadius)
+                    ->first();
 
-            Notification::make()->title('Status: Arrived (auto)')->success()->send();
+                if ($firstInRange && $firstInRange->created_at->diffInSeconds(now()) >= $dwellTime) {
+                    \Illuminate\Support\Facades\Log::info("Auto-Arrived Triggered for Stop #{$stop->id} (Dwell: {$dwellTime}s)");
+                    
+                    // ✅ CHAIN ARRIVAL: Tandai SEMUA toko dalam cluster sebagai arrived
+                    $cluster = $this->getNearbyStops();
+                    foreach ($cluster as $s) {
+                        if ($s->status === 'pending') {
+                            $s->update([
+                                'status' => 'arrived',
+                                'arrived_at' => now(),
+                            ]);
+                        }
+                    }
 
-            $this->refreshTrip();
-            $this->dispatchMapToActiveStop();
+                    Notification::make()->title("Sudah Sampai di Lokasi Cluster (" . $cluster->count() . " Toko)")->success()->send();
+                    
+                    // ✅ VOICE ALERT: Cluster
+                    $this->dispatch('voice-alert', message: "Memasuki kawasan pasar. Ada " . $cluster->count() . " toko di sini. Silakan mulai pengiriman.");
+
+                    $this->refreshTrip();
+                    $this->dispatchMapToActiveStop();
+                }
+            }
         }
     }
 
@@ -270,10 +324,40 @@ class RunDriverTrip extends Page
 
         Notification::make()->title('Stop selesai (Done)')->success()->send();
 
+        // ✅ VOICE ALERT: Stop Done
+        $this->dispatch('voice-alert', message: "Pengiriman di " . $stop->store->name . " selesai. Lanjutkan ke tujuan berikutnya.");
+
         $this->form->fill([
             'skip_reason' => null,
 
         ]);
+
+        $this->refreshTrip();
+        $this->dispatchMapToActiveStop();
+    }
+
+    public function postponeStop(): void
+    {
+        $stop = $this->activeStop();
+        if (! $stop) {
+            return;
+        }
+
+        $maxSequence = $this->record->stops()->max('sequence') ?? 0;
+
+        $stop->update([
+            'status' => 'pending',
+            'sequence' => $maxSequence + 1,
+            'arrived_at' => null,
+            'skipped_at' => null,
+            'skip_reason' => null,
+        ]);
+
+        Notification::make()
+            ->title('Stop Ditunda')
+            ->body("Kunjungan ke {$stop->store->name} dipindahkan ke urutan terakhir.")
+            ->warning()
+            ->send();
 
         $this->refreshTrip();
         $this->dispatchMapToActiveStop();
