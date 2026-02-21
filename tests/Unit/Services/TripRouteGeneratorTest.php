@@ -21,7 +21,8 @@ class TripRouteGeneratorTest extends TestCase
         parent::setUp();
 
         // Mock ORS Service
-        $this->generator = new TripRouteGenerator(new OrsService);
+        $ors = \Mockery::mock(OrsService::class);
+        $this->generator = new TripRouteGenerator($ors);
     }
 
     public function test_can_generate_route_for_valid_trip()

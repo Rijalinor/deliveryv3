@@ -95,6 +95,8 @@ class GiBasedTripTest extends TestCase
                 'gi_input' => ['GI-001', 'GI-002'],
                 'start_date' => now()->toDateString(),
                 'start_time' => '08:00',
+                'start_lat' => -3.356837,
+                'start_lng' => 114.577059,
             ])
             ->call('create')
             ->assertHasNoFormErrors();

@@ -58,8 +58,8 @@ class TripResource extends Resource
                     ->options([
                         'planned' => 'planned',
                         'on_going' => 'on_going',
-                        'completed' => 'completed',
-                        'failed' => 'failed',
+                        'done' => 'done',
+                        'cancelled' => 'cancelled',
                     ])->default('planned')
                     ->required(),
             ])->columns(3),
@@ -122,7 +122,6 @@ class TripResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        'open' => 'info',
                         'planned' => 'gray',
                         'on_going' => 'warning',
                         'done' => 'success',
