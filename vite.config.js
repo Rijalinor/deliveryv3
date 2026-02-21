@@ -6,6 +6,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
+                'resources/css/filament/driver/theme.css',
                 'resources/js/app.js',
                 'resources/js/capacitor-location.js'
             ],
