@@ -145,9 +145,9 @@ class TripRouteGeneratorTest extends TestCase
             'lat' => 0, 'lng' => 0, // lat=0 dianggap falsy di PHP → dilewati
         ]);
         TripStop::create([
-            'trip_id'  => $trip->id,
+            'trip_id' => $trip->id,
             'store_id' => $storeInvalid->id,
-            'status'   => 'pending',
+            'status' => 'pending',
         ]);
 
         $ors = Mockery::mock(OrsService::class);
@@ -173,7 +173,7 @@ class TripRouteGeneratorTest extends TestCase
 
         $ors = Mockery::mock(OrsService::class);
         $ors->shouldReceive('optimize')->once()->andReturn([
-            'routes'     => [['steps' => [['type' => 'start']]]], // no jobs in steps
+            'routes' => [['steps' => [['type' => 'start']]]], // no jobs in steps
             'unassigned' => [['id' => $stopA->id, 'reason' => 'Out of range']],
         ]);
         $ors->shouldReceive('matrix')->once()->andReturn([

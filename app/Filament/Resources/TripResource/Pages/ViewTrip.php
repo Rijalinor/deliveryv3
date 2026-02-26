@@ -125,7 +125,8 @@ class ViewTrip extends ViewRecord
                                     return '-';
                                 }
                                 $cost = $record->estimated_fuel_cost;
-                                return 'Rp ' . number_format($cost, 0, ',', '.');
+
+                                return 'Rp '.number_format($cost, 0, ',', '.');
                             })
                             ->icon('heroicon-o-fire')
                             ->color('warning')
@@ -134,7 +135,8 @@ class ViewTrip extends ViewRecord
                                 $price = config('delivery.fuel_price_per_liter', 13000);
                                 $factor = config('delivery.fuel_safety_factor', 1.20);
                                 $distKm = round(($record->total_distance_m ?? 0) / 1000, 1);
-                                return "{$distKm} km ÷ {$kmPerLiter} km/L × Rp " . number_format($price, 0, ',', '.') . " × {$factor}x safety";
+
+                                return "{$distKm} km ÷ {$kmPerLiter} km/L × Rp ".number_format($price, 0, ',', '.')." × {$factor}x safety";
                             }),
                         TextEntry::make('generated_at')
                             ->label('Rute Terakhir Dibuat')

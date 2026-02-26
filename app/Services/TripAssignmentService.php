@@ -49,7 +49,7 @@ class TripAssignmentService
                     if (! $store) {
                         // Prevent Race Condition: lock the table/row conceptually by doing a strict lookup first
                         $store = \App\Models\Store::where('name', $storeName)->lockForUpdate()->first();
-                        
+
                         if (! $store) {
                             $store = \App\Models\Store::create([
                                 'name' => $storeName,

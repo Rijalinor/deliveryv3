@@ -53,10 +53,10 @@ class OrsService
             $code = data_get($body, 'error.code') ?? $res->status();
 
             Log::error('ORS optimize() failed', [
-                'code'    => $code,
+                'code' => $code,
                 'message' => $msg,
                 'profile' => $profile,
-                'jobs'    => count($jobs),
+                'jobs' => count($jobs),
             ]);
 
             $hint = match (true) {
@@ -98,9 +98,9 @@ class OrsService
             $code = data_get($body, 'error.code') ?? $res->status();
 
             Log::error('ORS matrix() failed', [
-                'code'      => $code,
-                'message'   => $msg,
-                'profile'   => $profile,
+                'code' => $code,
+                'message' => $msg,
+                'profile' => $profile,
                 'locations' => count($locations),
             ]);
 
@@ -151,9 +151,9 @@ class OrsService
             $code = data_get($body, 'error.code') ?? $res->status();
 
             Log::error('ORS directions() failed', [
-                'code'        => $code,
-                'message'     => $msg,
-                'profile'     => $profile,
+                'code' => $code,
+                'message' => $msg,
+                'profile' => $profile,
                 'coordinates' => count($coordinates),
             ]);
 

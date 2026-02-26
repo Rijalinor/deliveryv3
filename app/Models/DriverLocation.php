@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DriverLocation extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'driver_id',
         'trip_id',

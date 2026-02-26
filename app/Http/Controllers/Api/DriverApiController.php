@@ -234,8 +234,8 @@ class DriverApiController extends Controller
                 ->orderBy('created_at', 'asc')
                 ->get()
                 ->map(fn ($loc) => [
-                    'lat'  => (float) $loc->lat,
-                    'lng'  => (float) $loc->lng,
+                    'lat' => (float) $loc->lat,
+                    'lng' => (float) $loc->lng,
                     'time' => $loc->created_at->toIso8601String(),
                 ])
                 ->values();
@@ -243,15 +243,15 @@ class DriverApiController extends Controller
             return response()->json([
                 'success' => true,
                 'trip_id' => $trip->id,
-                'count'   => $locations->count(),
-                'data'    => $locations,
+                'count' => $locations->count(),
+                'data' => $locations,
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch location history',
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

@@ -35,14 +35,15 @@ class PurgeDriverLocations extends Command
         $count = DriverLocation::where('created_at', '<', $cutoffDate)->count();
 
         if ($count === 0) {
-            $this->info("Tidak ada data lama yang ditemukan. Clean!");
+            $this->info('Tidak ada data lama yang ditemukan. Clean!');
+
             return Command::SUCCESS;
         }
 
         // In cron, we should skip confirm. $this->option('no-interaction') handles this natively,
         // but to be safe, if we are running in non-interactive mode, or if we pass a special flag, skip confirmation.
         // We'll just execute it directly because it's a scheduled job.
-        
+
         // Hapus dalam chunk menggunakan query builder agar cepat
         // Karena tidak ada soft delete di driver_locations, langsung delete()
         $deleted = DriverLocation::where('created_at', '<', $cutoffDate)->delete();
