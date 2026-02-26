@@ -118,6 +118,24 @@ class ViewTrip extends ViewRecord
                                 return "{$hours} jam {$min} menit";
                             })
                             ->icon('heroicon-o-clock'),
+                        TextEntry::make('estimated_fuel_cost')
+                            ->label('Estimasi BBM')
+                            ->state(function ($record) {
+                                if (! $record->total_distance_m) {
+                                    return '-';
+                                }
+                                $cost = $record->estimated_fuel_cost;
+                                return 'Rp ' . number_format($cost, 0, ',', '.');
+                            })
+                            ->icon('heroicon-o-fire')
+                            ->color('warning')
+                            ->helperText(function ($record) {
+                                $kmPerLiter = config('delivery.fuel_km_per_liter', 10);
+                                $price = config('delivery.fuel_price_per_liter', 13000);
+                                $factor = config('delivery.fuel_safety_factor', 1.20);
+                                $distKm = round(($record->total_distance_m ?? 0) / 1000, 1);
+                                return "{$distKm} km ÷ {$kmPerLiter} km/L × Rp " . number_format($price, 0, ',', '.') . " × {$factor}x safety";
+                            }),
                         TextEntry::make('generated_at')
                             ->label('Rute Terakhir Dibuat')
                             ->dateTime('d M Y H:i')

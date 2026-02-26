@@ -117,4 +117,115 @@ class TripRouteGeneratorTest extends TestCase
             'close_time' => '23:59:00',
         ]);
     }
+
+    // ─── Edge Case Tests ──────────────────────────────────────────────────────
+
+    public function test_generate_throws_if_trip_has_no_stops(): void
+    {
+        $trip = $this->makeTrip();
+        $ors = Mockery::mock(OrsService::class);
+        // ORS should NOT be called at all
+        $ors->shouldNotReceive('optimize');
+
+        $generator = new TripRouteGenerator($ors);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/[Ss]tops kosong|koordinat/i');
+        $generator->generate($trip->fresh());
+    }
+
+    public function test_generate_skips_stops_with_missing_coordinates(): void
+    {
+        $trip = $this->makeTrip();
+
+        // Store dengan koordinat 0 (falsy) — akan difilter oleh TripRouteGenerator
+        // karena filter fn($s) => $s->store && $s->store->lat && $s->store->lng
+        $storeInvalid = Store::create([
+            'name' => 'Toko Koordinat Nol', 'address' => 'Test',
+            'lat' => 0, 'lng' => 0, // lat=0 dianggap falsy di PHP → dilewati
+        ]);
+        TripStop::create([
+            'trip_id'  => $trip->id,
+            'store_id' => $storeInvalid->id,
+            'status'   => 'pending',
+        ]);
+
+        $ors = Mockery::mock(OrsService::class);
+        $ors->shouldNotReceive('optimize');
+
+        $generator = new TripRouteGenerator($ors);
+
+        $this->expectException(\RuntimeException::class);
+        $generator->generate($trip->fresh());
+    }
+
+    public function test_generate_assigns_sequence_to_unassigned_stops(): void
+    {
+        // Ketika ORS mengembalikan stop sebagai "unassigned" (tidak bisa dijangkau),
+        // generator tetap harus assign sequence agar stop tidak hilang dari daftar.
+        $trip = $this->makeTrip();
+        $trip->update(['service_minutes' => 0, 'traffic_factor' => 1.0]);
+
+        $storeA = $this->makeStore('Toko A', 1.0, 101.0);
+        $stopA = TripStop::create([
+            'trip_id' => $trip->id, 'store_id' => $storeA->id, 'status' => 'pending',
+        ]);
+
+        $ors = Mockery::mock(OrsService::class);
+        $ors->shouldReceive('optimize')->once()->andReturn([
+            'routes'     => [['steps' => [['type' => 'start']]]], // no jobs in steps
+            'unassigned' => [['id' => $stopA->id, 'reason' => 'Out of range']],
+        ]);
+        $ors->shouldReceive('matrix')->once()->andReturn([
+            'durations' => [[0, 600], [600, 0]],
+            'distances' => [[0, 1000], [1000, 0]],
+        ]);
+        $ors->shouldReceive('directions')->once()->andReturn([
+            'type' => 'FeatureCollection', 'features' => [],
+        ]);
+
+        $generator = new TripRouteGenerator($ors);
+        $generator->generate($trip->fresh());
+
+        $this->assertSame(1, $stopA->refresh()->sequence, 'Unassigned stop harus tetap mendapat sequence');
+    }
+
+    public function test_generate_applies_traffic_factor_to_eta(): void
+    {
+        // ETA harus diperbesar sesuai traffic_factor
+        $trip = $this->makeTrip();
+        $trip->update(['service_minutes' => 0, 'traffic_factor' => 2.0]); // 2x traffic factor
+
+        $storeA = $this->makeStore('Toko A', 1.0, 101.0);
+        $stopA = TripStop::create([
+            'trip_id' => $trip->id, 'store_id' => $storeA->id, 'status' => 'pending',
+        ]);
+
+        $rawDurationSec = 1800; // 30 min dari ORS
+
+        $ors = Mockery::mock(OrsService::class);
+        $ors->shouldReceive('optimize')->once()->andReturn([
+            'routes' => [['steps' => [
+                ['type' => 'start'],
+                ['job' => $stopA->id, 'arrival' => 8 * 3600 + $rawDurationSec, 'service' => 0],
+            ]]],
+        ]);
+        $ors->shouldReceive('matrix')->once()->andReturn([
+            'durations' => [[0, $rawDurationSec], [$rawDurationSec, 0]],
+            'distances' => [[0, 1000], [1000, 0]],
+        ]);
+        $ors->shouldReceive('directions')->once()->andReturn([
+            'type' => 'FeatureCollection', 'features' => [],
+        ]);
+
+        $generator = new TripRouteGenerator($ors);
+        $generator->generate($trip->fresh());
+
+        $stopA = $stopA->refresh();
+        $this->assertNotNull($stopA->eta_at);
+
+        // ETA = 08:00 + (1800s * 2.0 factor) = 08:00 + 3600s = 09:00
+        $etaHour = \Carbon\Carbon::parse($stopA->eta_at)->hour;
+        $this->assertSame(9, $etaHour, 'Traffic factor 2x harus menggeser ETA sesuai (08:30 -> 09:00)');
+    }
 }

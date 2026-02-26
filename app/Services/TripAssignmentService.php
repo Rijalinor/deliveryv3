@@ -47,14 +47,17 @@ class TripAssignmentService
                         $store = \App\Models\Store::find($firstItem->store_id);
                     }
                     if (! $store) {
-                        $store = \App\Models\Store::firstOrCreate(
-                            ['name' => $storeName],
-                            [
+                        // Prevent Race Condition: lock the table/row conceptually by doing a strict lookup first
+                        $store = \App\Models\Store::where('name', $storeName)->lockForUpdate()->first();
+                        
+                        if (! $store) {
+                            $store = \App\Models\Store::create([
+                                'name' => $storeName,
                                 'address' => $firstItem->address,
                                 'lat' => config('delivery.warehouse_lat', -6.200000),
                                 'lng' => config('delivery.warehouse_lng', 106.816666),
-                            ]
-                        );
+                            ]);
+                        }
                     }
 
                     // Create or Find Stop for this Trip + Store

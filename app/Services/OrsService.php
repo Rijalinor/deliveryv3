@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class OrsService
 {
@@ -50,7 +51,21 @@ class OrsService
             $body = $res->json();
             $msg = data_get($body, 'error.message') ?? $res->body();
             $code = data_get($body, 'error.code') ?? $res->status();
-            throw new \RuntimeException("ORS error ({$code}): {$msg}");
+
+            Log::error('ORS optimize() failed', [
+                'code'    => $code,
+                'message' => $msg,
+                'profile' => $profile,
+                'jobs'    => count($jobs),
+            ]);
+
+            $hint = match (true) {
+                $res->status() === 429 => ' (Rate limit ORS tercapai — coba lagi dalam 1 menit)',
+                $res->status() === 403 => ' (API Key tidak valid — cek ORS_API_KEY di .env)',
+                default => '',
+            };
+
+            throw new \RuntimeException("ORS optimize error ({$code}): {$msg}{$hint}");
         }
 
         return $res->json();
@@ -81,7 +96,21 @@ class OrsService
             $body = $res->json();
             $msg = data_get($body, 'error.message') ?? $res->body();
             $code = data_get($body, 'error.code') ?? $res->status();
-            throw new \RuntimeException("ORS matrix error ({$code}): {$msg}");
+
+            Log::error('ORS matrix() failed', [
+                'code'      => $code,
+                'message'   => $msg,
+                'profile'   => $profile,
+                'locations' => count($locations),
+            ]);
+
+            $hint = match (true) {
+                $res->status() === 429 => ' (Rate limit ORS — coba lagi sebentar)',
+                str_contains(strtolower($msg), 'point') => ' (Salah satu koordinat toko tidak bisa dijangkau di jalan — cek koordinat toko)',
+                default => '',
+            };
+
+            throw new \RuntimeException("ORS matrix error ({$code}): {$msg}{$hint}");
         }
 
         return $res->json();
@@ -120,7 +149,15 @@ class OrsService
             $body = $res->json();
             $msg = data_get($body, 'error.message') ?? $res->body();
             $code = data_get($body, 'error.code') ?? $res->status();
-            throw new \RuntimeException("ORS error ({$code}): {$msg}");
+
+            Log::error('ORS directions() failed', [
+                'code'        => $code,
+                'message'     => $msg,
+                'profile'     => $profile,
+                'coordinates' => count($coordinates),
+            ]);
+
+            throw new \RuntimeException("ORS directions error ({$code}): {$msg}");
         }
 
         return $res->json();

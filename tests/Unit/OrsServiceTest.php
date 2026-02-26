@@ -49,7 +49,7 @@ class OrsServiceTest extends TestCase
         ]);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('ORS error (123): bad request');
+        $this->expectExceptionMessage('ORS optimize error (123): bad request');
 
         (new OrsService)->optimize([1.0, 2.0], [], 0);
     }

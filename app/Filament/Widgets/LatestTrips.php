@@ -19,7 +19,8 @@ class LatestTrips extends BaseWidget
         return $table
             ->query(
                 Trip::query()
-                    ->with(['driver', 'stops'])
+                    ->with('driver')        // eager load driver (prevents N+1)
+                    ->withCount('stops')    // count in single query (no N+1)
                     ->latest()
                     ->limit(10)
             )

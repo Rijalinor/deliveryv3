@@ -15,13 +15,22 @@ class TripStatsOverview extends BaseWidget
     {
         $today = now()->startOfDay();
 
-        $totalToday = Trip::whereDate('start_date', $today)->count();
-        $activeNow = Trip::where('status', 'in_progress')->count();
-        $completedToday = Trip::whereDate('start_date', $today)
-            ->where('status', 'completed')
-            ->count();
+        // Single query for all trip stats (avoids 4 separate DB round-trips)
+        $stats = DB::table('trips')
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN start_date = ? THEN 1 ELSE 0 END) as total_today,
+                SUM(CASE WHEN status = 'on_going' THEN 1 ELSE 0 END) as active_now,
+                SUM(CASE WHEN start_date = ? AND status = 'done' THEN 1 ELSE 0 END) as completed_today
+            ", [now()->toDateString(), now()->toDateString()])
+            ->first();
+
+        $totalToday = $stats->total_today ?? 0;
+        $activeNow = $stats->active_now ?? 0;
+        $completedToday = $stats->completed_today ?? 0;
         $pendingStops = DB::table('trip_stops')
             ->where('status', 'pending')
+            ->whereNull('deleted_at')
             ->count();
 
         return [

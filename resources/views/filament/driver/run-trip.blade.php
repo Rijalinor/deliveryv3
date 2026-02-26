@@ -100,45 +100,124 @@
 
     <div class="space-y-8">
         {{-- VOICE ASSISTANT CONTROLS & SCRIPT --}}
-        <div class="flex justify-end mb-4" x-data="{ muted: localStorage.getItem('voice_muted') === 'true' }">
+        <div class="flex justify-end gap-2 mb-4" x-data="{ 
+            muted: localStorage.getItem('voice_muted') === 'true',
+            unlocked: false
+        }" x-init="unlocked = window.speechSynthesis.speaking || false">
             <button 
                 @click="muted = !muted; localStorage.setItem('voice_muted', muted); $dispatch('toggle-voice', { muted: muted })"
-                class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white dark:bg-gray-800 border-2 border-slate-100 dark:border-slate-700 shadow-sm hover:border-primary-500 transition-all"
+                class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white dark:bg-gray-800 border-2 border-slate-100 dark:border-slate-700 shadow-sm hover:border-primary-500 transition-all font-bold text-xs"
                 :class="muted ? 'opacity-50' : 'opacity-100 border-primary-500'"
             >
-                <template x-if="!muted">
-                    <span class="text-lg">🔊 <span class="text-xs font-bold uppercase tracking-wider ml-1 text-slate-600 dark:text-slate-400">Asisten Suara ON</span></span>
-                </template>
-                <template x-if="muted">
-                    <span class="text-lg">🔇 <span class="text-xs font-bold uppercase tracking-wider ml-1 text-slate-600 dark:text-slate-400">Asisten Suara OFF</span></span>
-                </template>
+                <span x-show="!muted">🔊 ON</span>
+                <span x-show="muted">🔇 OFF</span>
             </button>
+
+            <button 
+                @click="$dispatch('test-voice')"
+                class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white dark:bg-gray-800 border-2 border-slate-100 dark:border-slate-700 shadow-sm hover:border-primary-500 transition-all font-bold text-xs"
+                title="Test Suara"
+            >
+                <span>📢 TEST</span>
+            </button>
+
+            {{-- Overlay Unlock for WebViews --}}
+            <div x-show="!unlocked" class="fixed inset-0 z-[9999] bg-primary-900/90 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center text-white">
+                <div class="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6 animate-bounce">
+                    <x-heroicon-o-speaker-wave class="w-12 h-12" />
+                </div>
+                <h2 class="text-3xl font-black mb-4 uppercase">Aktifkan Asisten Suara</h2>
+                <p class="text-lg mb-8 opacity-80">Klik tombol di bawah untuk mengaktifkan suara petunjuk pengantaran.</p>
+                <x-filament::button size="xl" color="white" @click="
+                    speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+                    if (window.Capacitor?.Plugins?.TextToSpeech) {
+                        window.Capacitor.Plugins.TextToSpeech.speak({text: '', volume: 0.1});
+                    }
+                    unlocked = true;
+                    Notification.make().title('Asisten Suara Aktif').success().send();
+                " class="w-full max-w-xs py-6 text-xl font-black text-primary-600">
+                    SAYA MENGERTI
+                </x-filament::button>
+            </div>
         </div>
 
         <script>
             document.addEventListener('livewire:init', () => {
                 let isMuted = localStorage.getItem('voice_muted') === 'true';
+                let idVoice = null;
+
+                const loadVoices = () => {
+                    const voices = window.speechSynthesis.getVoices();
+                    idVoice = voices.find(v => 
+                        v.lang.toLowerCase().includes('id') || 
+                        v.name.toLowerCase().includes('indonesia')
+                    );
+                    if (idVoice) console.log('✅ ID Voice found:', idVoice.name);
+                };
+
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+                loadVoices();
 
                 document.addEventListener('toggle-voice', (e) => {
                     isMuted = e.detail.muted;
                 });
 
-                Livewire.on('voice-alert', (event) => {
+                document.addEventListener('test-voice', () => {
+                    speak('Percobaan suara asisten Delivery v3 berhasil.');
+                });
+
+                const speak = async (message) => {
                     if (isMuted) return;
 
-                    const message = event.message;
+                    // 1. Cek Native Capacitor Plugin (Prioritas untuk APK)
+                    const isNative = typeof window.Capacitor !== 'undefined' && window.Capacitor.getPlatform() !== 'web';
+                    if (isNative) {
+                        try {
+                            const { TextToSpeech } = window.Capacitor.Plugins;
+                            if (TextToSpeech) {
+                                await TextToSpeech.speak({
+                                    text: message,
+                                    lang: 'id-ID',
+                                    rate: 0.9, // Slower is more natural
+                                    pitch: 1.0,
+                                    volume: 1.0,
+                                    category: 'ambient',
+                                });
+                                console.log('🗣️ Native APK Speaking:', message);
+                                return; // Keluar jika berhasil native
+                            }
+                        } catch (err) {
+                            console.error('❌ Native TTS failed, falling back to Web:', err);
+                        }
+                    }
+
+                    // 2. Fallback ke Web Speech API (Paling stabil di Browser Chrome)
+                    if (!window.speechSynthesis) {
+                        console.error('❌ SpeechSynthesis not supported!');
+                        return;
+                    }
+
+                    // Force reload if not found
+                    if (!idVoice) loadVoices();
+
                     const utterance = new SpeechSynthesisUtterance(message);
                     utterance.lang = 'id-ID'; 
-                    utterance.rate = 1.0;
+                    utterance.rate = 0.9; // Slower is more natural
                     utterance.pitch = 1.0;
-
-                    // Search for Indonesian voice
-                    const voices = window.speechSynthesis.getVoices();
-                    const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
-                    if (idVoice) utterance.voice = idVoice;
+                    
+                    if (idVoice) {
+                        utterance.voice = idVoice;
+                    } else {
+                        console.warn('⚠️ ID Voice not found, trying default browser voice.');
+                    }
 
                     window.speechSynthesis.cancel();
                     window.speechSynthesis.speak(utterance);
+                    console.log('🗣️ Web Speaking:', message);
+                };
+
+                Livewire.on('voice-alert', (event) => {
+                    speak(event.message);
                 });
             });
         </script>

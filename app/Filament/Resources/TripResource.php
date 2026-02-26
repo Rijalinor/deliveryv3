@@ -41,17 +41,17 @@ class TripResource extends Resource
                     ->default(now()->format('H:i')),
 
                 Forms\Components\TextInput::make('start_lat')
-                    ->label('Warehouse Lat')
+                    ->label('Warehouse Lat (Start)')
+                    ->numeric()
+                    ->step('any')
                     ->default(config('delivery.warehouse_lat'))
-                    ->disabled()
-                    ->dehydrated()
                     ->required(),
 
                 Forms\Components\TextInput::make('start_lng')
-                    ->label('Warehouse Lng')
+                    ->label('Warehouse Lng (Start)')
+                    ->numeric()
+                    ->step('any')
                     ->default(config('delivery.warehouse_lng'))
-                    ->disabled()
-                    ->dehydrated()
                     ->required(),
 
                 Forms\Components\Select::make('status')

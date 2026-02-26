@@ -21,4 +21,7 @@ return [
 
     // ORS profile configuration
     'ors_profile' => env('ORS_PROFILE', 'driving-car'),
+
+    // System Maintenance
+    'location_retention_days' => env('LOCATION_RETENTION_DAYS', 30),
 ];

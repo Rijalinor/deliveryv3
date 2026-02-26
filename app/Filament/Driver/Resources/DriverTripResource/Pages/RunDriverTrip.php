@@ -179,7 +179,7 @@ class RunDriverTrip extends Page
             Notification::make()->title('Status: Arrived')->success()->send();
 
             // ✅ VOICE ALERT: Single Arrived
-            $this->dispatch('voice-alert', message: 'Tiba di '.$stop->store->name.'. Silakan antar barang.');
+            $this->dispatch('voice-alert', message: "Halo Driver, kita sudah sampai di {$stop->store->name}. Silakan antarkan barangnya ya.");
         }
 
         $this->form->fill([
@@ -298,7 +298,7 @@ class RunDriverTrip extends Page
                     Notification::make()->title('Sudah Sampai di Lokasi Cluster ('.$cluster->count().' Toko)')->success()->send();
 
                     // ✅ VOICE ALERT: Cluster
-                    $this->dispatch('voice-alert', message: 'Memasuki kawasan pasar. Ada '.$cluster->count().' toko di sini. Silakan mulai pengiriman.');
+                    $this->dispatch('voice-alert', message: "Perhatian Driver. Kita memasuki kawasan pasar. Ada {$cluster->count()} toko yang berdekatan di sini. Silakan mulai pengirimannya ya.");
 
                     $this->refreshTrip();
                     $this->dispatchMapToActiveStop();
@@ -325,7 +325,7 @@ class RunDriverTrip extends Page
         Notification::make()->title('Stop selesai (Done)')->success()->send();
 
         // ✅ VOICE ALERT: Stop Done
-        $this->dispatch('voice-alert', message: 'Pengiriman di '.$stop->store->name.' selesai. Lanjutkan ke tujuan berikutnya.');
+        $this->dispatch('voice-alert', message: "Bagus! Pengiriman di {$stop->store->name} sudah selesai. Yuk, kita lanjut ke tujuan berikutnya.");
 
         $this->form->fill([
             'skip_reason' => null,

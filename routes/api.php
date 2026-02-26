@@ -28,7 +28,9 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     // Driver Location Tracking
     Route::prefix('driver')->group(function () {
+        // Rate limit: 60 requests per minute per user (GPS updates ~every 5-10s)
         Route::post('/location', [DriverApiController::class, 'updateLocation'])
+            ->middleware('throttle:60,1')
             ->name('api.driver.location');
 
         Route::get('/active-trip', [DriverApiController::class, 'getActiveTrip'])
@@ -51,5 +53,9 @@ Route::middleware(['web', 'auth'])->group(function () {
 
         Route::post('/{trip}/finish', [TripApiController::class, 'finishTrip'])
             ->name('api.trip.finish');
+
+        // Trip replay: GPS location history
+        Route::get('/{trip}/location-history', [DriverApiController::class, 'getLocationHistory'])
+            ->name('api.trip.location-history');
     });
 });

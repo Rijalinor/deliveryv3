@@ -211,4 +211,48 @@ class DriverApiController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get GPS location history for a trip (for replay player)
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getLocationHistory(Trip $trip)
+    {
+        try {
+            $driver = Auth::user();
+
+            // Allow access for admin (no driver_id match needed) or owning driver
+            if ($trip->driver_id !== $driver->id && ! $driver->hasRole('admin')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access to this trip',
+                ], 403);
+            }
+
+            $locations = \App\Models\DriverLocation::where('trip_id', $trip->id)
+                ->orderBy('created_at', 'asc')
+                ->get()
+                ->map(fn ($loc) => [
+                    'lat'  => (float) $loc->lat,
+                    'lng'  => (float) $loc->lng,
+                    'time' => $loc->created_at->toIso8601String(),
+                ])
+                ->values();
+
+            return response()->json([
+                'success' => true,
+                'trip_id' => $trip->id,
+                'count'   => $locations->count(),
+                'data'    => $locations,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch location history',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

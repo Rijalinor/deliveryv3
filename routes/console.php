@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('app:cleanup-driver-locations')->daily();
+Schedule::command('delivery:purge-locations --no-interaction')->daily();
