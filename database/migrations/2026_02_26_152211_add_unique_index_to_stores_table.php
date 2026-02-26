@@ -12,6 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('stores', function (Blueprint $table) {
+            // Change text to string so it can be indexed easily on MySQL
+            $table->string('address', 255)->nullable()->change();
+            
             $table->index('name');
             $table->index('address');
         });
