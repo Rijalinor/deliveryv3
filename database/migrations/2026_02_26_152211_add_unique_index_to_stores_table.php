@@ -28,6 +28,7 @@ return new class extends Migration
         Schema::table('stores', function (Blueprint $table) {
             $table->dropIndex(['name']);
             $table->dropIndex(['address']);
+            $table->text('address')->nullable()->change();
         });
     }
 };
