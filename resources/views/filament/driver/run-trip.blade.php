@@ -92,53 +92,33 @@
             </div>
         </div>
     </div>
-    @else
+@else
     @php
         $cluster = $this->getNearbyStops();
         $isCluster = $cluster->count() > 1;
     @endphp
 
     <div class="space-y-8">
-        {{-- VOICE ASSISTANT CONTROLS & SCRIPT --}}
+        {{-- VOICE ASSISTANT CONTROLS --}}
         <div class="flex justify-end gap-2 mb-4" x-data="{ 
-            muted: localStorage.getItem('voice_muted') === 'true',
-            unlocked: false
-        }" x-init="unlocked = window.speechSynthesis.speaking || false">
+            muted: localStorage.getItem('voice_muted') === 'true'
+        }">
             <button 
                 @click="muted = !muted; localStorage.setItem('voice_muted', muted); $dispatch('toggle-voice', { muted: muted })"
-                class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white dark:bg-gray-800 border-2 border-slate-100 dark:border-slate-700 shadow-sm hover:border-primary-500 transition-all font-bold text-xs"
-                :class="muted ? 'opacity-50' : 'opacity-100 border-primary-500'"
+                class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-white/20 dark:border-gray-700/30 shadow-lg hover:bg-white dark:hover:bg-gray-800 transition-all font-bold text-xs"
+                :class="muted ? 'opacity-50' : 'opacity-100 border-primary-500/50'"
             >
-                <span x-show="!muted">🔊 ON</span>
-                <span x-show="muted">🔇 OFF</span>
+                <span x-show="!muted" class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-success-500 animate-pulse"></span> 🔊 SUARA ON</span>
+                <span x-show="muted" class="flex items-center gap-1.5">🔇 SUARA OFF</span>
             </button>
 
             <button 
                 @click="$dispatch('test-voice')"
-                class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white dark:bg-gray-800 border-2 border-slate-100 dark:border-slate-700 shadow-sm hover:border-primary-500 transition-all font-bold text-xs"
-                title="Test Suara"
+                class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-white/20 dark:border-gray-700/30 shadow-lg hover:bg-white dark:hover:bg-gray-800 transition-all font-bold text-xs"
             >
                 <span>📢 TEST</span>
             </button>
 
-            {{-- Overlay Unlock for WebViews --}}
-            <div x-show="!unlocked" class="fixed inset-0 z-[9999] bg-primary-900/90 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center text-white">
-                <div class="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6 animate-bounce">
-                    <x-heroicon-o-speaker-wave class="w-12 h-12" />
-                </div>
-                <h2 class="text-3xl font-black mb-4 uppercase">Aktifkan Asisten Suara</h2>
-                <p class="text-lg mb-8 opacity-80">Klik tombol di bawah untuk mengaktifkan suara petunjuk pengantaran.</p>
-                <x-filament::button size="xl" color="white" @click="
-                    speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-                    if (window.Capacitor?.Plugins?.TextToSpeech) {
-                        window.Capacitor.Plugins.TextToSpeech.speak({text: '', volume: 0.1});
-                    }
-                    unlocked = true;
-                    Notification.make().title('Asisten Suara Aktif').success().send();
-                " class="w-full max-w-xs py-6 text-xl font-black text-primary-600">
-                    SAYA MENGERTI
-                </x-filament::button>
-            </div>
         </div>
 
         <script>
@@ -279,29 +259,33 @@
                         Sedang Diproses: {{ $active->store->name }}
                     </div>
 
-                    <div class="grid grid-cols-1 gap-4">
-                        @if($active->status === 'pending')
-                            <x-filament::button size="xl" color="success" wire:click="markArrived" icon="heroicon-m-check-circle" class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-success-700">
-                                SAYA SUDAH SAMPAI
-                            </x-filament::button>
-                        @else
-                            <x-filament::button size="xl" color="success" wire:click="markDone" icon="heroicon-m-check-badge" class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-success-700">
-                                SELESAI ANTAR
-                            </x-filament::button>
-                        @endif
-                    </div>
+                    @if($trip->status === 'planned')
+                        @include('filament.driver.partials.start-trip-button')
+                    @else
+                        <div class="grid grid-cols-1 gap-4">
+                            @if($active->status === 'pending')
+                                <x-filament::button size="xl" color="success" wire:click="markArrived" icon="heroicon-m-check-circle" class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-success-700">
+                                    SAYA SUDAH SAMPAI
+                                </x-filament::button>
+                            @else
+                                <x-filament::button size="xl" color="success" wire:click="markDone" icon="heroicon-m-check-badge" class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-success-700">
+                                    SELESAI ANTAR
+                                </x-filament::button>
+                            @endif
+                        </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <x-filament::button variant="outlined" color="warning" wire:click="postponeStop" class="py-4 text-sm font-black uppercase tracking-tighter border-2 rounded-xl">
-                            <x-heroicon-m-arrow-path class="w-5 h-5 mr-1" />
-                            TUNDA
-                        </x-filament::button>
+                        <div class="grid grid-cols-2 gap-4">
+                            <x-filament::button variant="outlined" color="warning" wire:click="postponeStop" class="py-4 text-sm font-black uppercase tracking-tighter border-2 rounded-xl">
+                                <x-heroicon-m-arrow-path class="w-5 h-5 mr-1" />
+                                TUNDA
+                            </x-filament::button>
 
-                        <x-filament::button variant="outlined" color="danger" wire:click="markRejected" class="py-4 text-sm font-black uppercase tracking-tighter border-2 rounded-xl">
-                            <x-heroicon-m-x-circle class="w-5 h-5 mr-1" />
-                            REJECT
-                        </x-filament::button>
-                    </div>
+                            <x-filament::button variant="outlined" color="danger" wire:click="markRejected" class="py-4 text-sm font-black uppercase tracking-tighter border-2 rounded-xl">
+                                <x-heroicon-m-x-circle class="w-5 h-5 mr-1" />
+                                REJECT
+                            </x-filament::button>
+                        </div>
+                    @endif
                 </div>
             </div>
         @else
@@ -350,23 +334,28 @@
                             :href="$this->gmapsUrl()"
                             target="_blank"
                             icon="heroicon-m-map"
-                            class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl">
+                            class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-primary-700">
                             BUKA PETA
                         </x-filament::button>
 
-                        @if($active->status === 'pending')
-                            <x-filament::button size="xl" color="success" wire:click="markArrived" icon="heroicon-m-check-circle" class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-success-700">
-                                SAYA SUDAH SAMPAI
-                            </x-filament::button>
+                        @if($trip->status === 'planned')
+                            @include('filament.driver.partials.start-trip-button')
                         @else
-                            <x-filament::button size="xl" color="success" wire:click="markDone" icon="heroicon-m-check-badge" class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-success-700">
-                                PENGIRIMAN SELESAI
-                            </x-filament::button>
+                            @if($active->status === 'pending')
+                                <x-filament::button size="xl" color="success" wire:click="markArrived" icon="heroicon-m-check-circle" class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-success-700">
+                                    SAYA SUDAH SAMPAI
+                                </x-filament::button>
+                            @else
+                                <x-filament::button size="xl" color="success" wire:click="markDone" icon="heroicon-m-check-badge" class="w-full py-6 text-2xl font-black uppercase tracking-wider shadow-xl rounded-2xl border-b-4 border-success-700">
+                                    PENGIRIMAN SELESAI
+                                </x-filament::button>
+                            @endif
                         @endif
                     </div>
 
+                    @if($trip->status !== 'planned')
                     {{-- Secondary Action Row (Grouped) --}}
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-4 mt-4">
                         <x-filament::button variant="outlined" color="warning" wire:click="postponeStop" class="py-4 text-sm font-black uppercase tracking-tighter border-2 rounded-xl">
                             <x-heroicon-m-arrow-path class="w-5 h-5 mr-1" />
                             TUNDA
@@ -377,6 +366,7 @@
                             REJECT
                         </x-filament::button>
                     </div>
+                    @endif
                 </div>
             </div>
         @endif
@@ -500,4 +490,5 @@
             updateStatus();
         })();
     </script>
+    {{-- READINESS CHECK OVERLAY AT ROOT --}}
 </x-filament::page>

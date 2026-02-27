@@ -32,11 +32,12 @@ class RunDriverTrip extends Page
         // Optional: pastikan driver hanya akses trip miliknya
         // abort_unless($this->record->driver_id === auth()->id(), 403);
 
-        // Auto start trip kalau masih planned
-        if ($this->record->status === 'planned') {
-            $this->record->update(['status' => 'on_going']);
-            $this->record->refresh();
-        }
+        // Biarkan 'planned' sampai driver klik 'Mulai Trip'
+        // if ($this->record->status === 'planned') {
+        //     $this->record->update(['status' => 'on_going']);
+        //     $this->record->refresh();
+        // }
+        // 
         $this->dispatchMapToActiveStop();
         $this->form->fill([
             'skip_reason' => null,
@@ -411,6 +412,34 @@ class RunDriverTrip extends Page
         $this->record->refresh();
 
         Notification::make()->title('Trip selesai ✅')->success()->send();
+    }
+
+    public function startTrip(): void
+    {
+        if ($this->record->status === 'planned') {
+            $this->record->update(['status' => 'on_going']);
+            $this->record->refresh();
+            
+            Notification::make()->title('Trip Dimulai! Hati-hati di jalan.')->success()->send();
+            
+            // ✅ VOICE ALERT: Trip Started
+            $this->dispatch('voice-alert', message: "Trip di mulai. Pastikan selalu berhati-hati saat berkendara ya.");
+            
+            $this->dispatchMapToActiveStop();
+        }
+    }
+
+    public function notifyLocationFailed(): void
+    {
+        Notification::make()
+            ->title('Akses Lokasi Diperlukan')
+            ->body('Aktifkan izin lokasi (GPS) di sistem atau browser Anda untuk memulai trip.')
+            ->danger()
+            ->persistent()
+            ->send();
+            
+        // ✅ VOICE ALERT: Location Failed
+        $this->dispatch('voice-alert', message: "Maaf, akses lokasi belum diaktifkan. Silakan aktifkan GPS Anda terlebih dahulu.");
     }
 
     private function distanceMeters(float $lat1, float $lng1, float $lat2, float $lng2): float

@@ -32,9 +32,7 @@ class CapacitorLocationTracker {
             (location, error) => {
                 if (error) {
                     if (error.code === "NOT_AUTHORIZED") {
-                        if (window.confirm("Aplikasi butuh izin lokasi 'Allow all the time'. Buka pengaturan?")) {
-                            BackgroundGeolocation.openSettings();
-                        }
+                        console.error("Location not authorized");
                     }
                     return;
                 }
@@ -57,6 +55,35 @@ class CapacitorLocationTracker {
             await BackgroundGeolocation.removeWatcher({ id: this.watchId });
             this.watchId = null;
             console.log('Stopped background tracking');
+        }
+    }
+
+    static async openSettings() {
+        if (!this.isNative()) return;
+        try {
+            await BackgroundGeolocation.openSettings();
+        } catch (e) {
+            console.error("Failed to open settings", e);
+        }
+    }
+
+    static async checkStatus() {
+        if (!this.isNative()) {
+            return { granted: true, gps: true };
+        }
+
+        try {
+            const { Geolocation } = window.Capacitor.Plugins;
+            const permission = await Geolocation.checkPermissions();
+            const granted = permission.location === 'granted' || permission.coarseLocation === 'granted';
+
+            return {
+                granted: granted,
+                gps: true
+            };
+        } catch (e) {
+            console.error("Failed to check status", e);
+            return { granted: false, gps: false };
         }
     }
 }
