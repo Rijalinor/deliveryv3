@@ -127,15 +127,29 @@
                 let idVoice = null;
 
                 const loadVoices = () => {
-                    const voices = window.speechSynthesis.getVoices();
-                    idVoice = voices.find(v => 
-                        v.lang.toLowerCase().includes('id') || 
-                        v.name.toLowerCase().includes('indonesia')
-                    );
-                    if (idVoice) console.log('✅ ID Voice found:', idVoice.name);
+                    return new Promise((resolve) => {
+                        let voices = window.speechSynthesis.getVoices();
+                        if (voices.length > 0) {
+                            idVoice = voices.find(v => 
+                                v.lang.toLowerCase().includes('id') || 
+                                v.name.toLowerCase().includes('indonesia')
+                            );
+                            if (idVoice) console.log('✅ ID Voice found:', idVoice.name);
+                            resolve(voices);
+                        } else {
+                            window.speechSynthesis.onvoiceschanged = () => {
+                                voices = window.speechSynthesis.getVoices();
+                                idVoice = voices.find(v => 
+                                    v.lang.toLowerCase().includes('id') || 
+                                    v.name.toLowerCase().includes('indonesia')
+                                );
+                                if (idVoice) console.log('✅ ID Voice found (async):', idVoice.name);
+                                resolve(voices);
+                            };
+                        }
+                    });
                 };
 
-                window.speechSynthesis.onvoiceschanged = loadVoices;
                 loadVoices();
 
                 document.addEventListener('toggle-voice', (e) => {
@@ -177,8 +191,8 @@
                         return;
                     }
 
-                    // Force reload if not found
-                    if (!idVoice) loadVoices();
+                    // Ensure voices are loaded
+                    if (!idVoice) await loadVoices();
 
                     const utterance = new SpeechSynthesisUtterance(message);
                     utterance.lang = 'id-ID'; 
@@ -190,6 +204,10 @@
                     } else {
                         console.warn('⚠️ ID Voice not found, trying default browser voice.');
                     }
+
+                    utterance.onerror = (event) => {
+                        console.error('❌ SpeechSynthesis error:', event.error);
+                    };
 
                     window.speechSynthesis.cancel();
                     window.speechSynthesis.speak(utterance);
