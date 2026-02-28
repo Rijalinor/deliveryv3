@@ -119,14 +119,58 @@
                 <span>📢 TEST</span>
             </button>
 
+            <button 
+                @click="document.getElementById('voice-debug').classList.toggle('hidden')"
+                class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gray-200 dark:bg-gray-700 border border-transparent shadow-lg font-bold text-xs"
+            >
+                <span>🛠️ DEBUG</span>
+            </button>
+        </div>
+
+        <div id="voice-debug" class="hidden p-4 bg-black/80 text-green-400 font-mono text-[10px] rounded-xl mb-4 overflow-auto max-h-40">
+            <div class="flex justify-between mb-2">
+                <span>VOICE DEBUG CONSOLE</span>
+                <button onclick="document.getElementById('voice-debug-log').innerHTML = ''">[Clear]</button>
+            </div>
+            <div id="voice-debug-log"></div>
         </div>
 
         <script>
             document.addEventListener('livewire:init', () => {
                 let isMuted = localStorage.getItem('voice_muted') === 'true';
-                let idVoice = null;
+                const debugLog = (msg) => {
+                    console.log(msg);
+                    const logEl = document.getElementById('voice-debug-log');
+                    if (logEl) {
+                        const div = document.createElement('div');
+                        div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+                        logEl.prepend(div);
+                    }
+                };
+
+                const playBeep = () => {
+                    try {
+                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const oscillator = audioCtx.createOscillator();
+                        const gainNode = audioCtx.createGain();
+
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioCtx.destination);
+
+                        oscillator.type = 'sine';
+                        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); 
+                        gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+
+                        oscillator.start();
+                        oscillator.stop(audioCtx.currentTime + 0.1);
+                        debugLog('🎵 Diagnostic Beep Played');
+                    } catch (e) {
+                        debugLog('❌ Beep failed: ' + e.message);
+                    }
+                };
 
                 const loadVoices = () => {
+                    debugLog('⏳ Loading voices...');
                     return new Promise((resolve) => {
                         let voices = window.speechSynthesis.getVoices();
                         if (voices.length > 0) {
@@ -134,7 +178,7 @@
                                 v.lang.toLowerCase().includes('id') || 
                                 v.name.toLowerCase().includes('indonesia')
                             );
-                            if (idVoice) console.log('✅ ID Voice found:', idVoice.name);
+                            debugLog(`✅ Voices ready (${voices.length} found). ID Voice: ${idVoice ? idVoice.name : 'Not Found'}`);
                             resolve(voices);
                         } else {
                             window.speechSynthesis.onvoiceschanged = () => {
@@ -143,7 +187,7 @@
                                     v.lang.toLowerCase().includes('id') || 
                                     v.name.toLowerCase().includes('indonesia')
                                 );
-                                if (idVoice) console.log('✅ ID Voice found (async):', idVoice.name);
+                                debugLog(`✅ Voices ready async (${voices.length} found). ID Voice: ${idVoice ? idVoice.name : 'Not Found'}`);
                                 resolve(voices);
                             };
                         }
@@ -154,64 +198,80 @@
 
                 document.addEventListener('toggle-voice', (e) => {
                     isMuted = e.detail.muted;
+                    debugLog('🔇 Mute status: ' + isMuted);
                 });
 
                 document.addEventListener('test-voice', () => {
+                    debugLog('🔔 Test button clicked');
                     speak('Percobaan suara asisten Delivery v3 berhasil.');
                 });
 
                 const speak = async (message) => {
-                    if (isMuted) return;
+                    if (isMuted) {
+                        debugLog('⚠️ Speak cancelled: Muted');
+                        return;
+                    }
+
+                    debugLog('🗣️ Attempting to speak: ' + message);
 
                     // 1. Cek Native Capacitor Plugin (Prioritas untuk APK)
                     const isNative = typeof window.Capacitor !== 'undefined' && window.Capacitor.getPlatform() !== 'web';
                     if (isNative) {
+                        debugLog('📱 Detected Native Platform: ' + window.Capacitor.getPlatform());
                         try {
                             const { TextToSpeech } = window.Capacitor.Plugins;
                             if (TextToSpeech) {
+                                debugLog('🔌 TextToSpeech Plugin found');
                                 await TextToSpeech.speak({
                                     text: message,
                                     lang: 'id-ID',
-                                    rate: 0.9, // Slower is more natural
+                                    rate: 0.9, 
                                     pitch: 1.0,
                                     volume: 1.0,
-                                    category: 'ambient',
+                                    category: 'playback', // Use playback instead of ambient
                                 });
-                                console.log('🗣️ Native APK Speaking:', message);
-                                return; // Keluar jika berhasil native
+                                debugLog('✅ Native Speak Success');
+                                return; 
+                            } else {
+                                debugLog('❌ TextToSpeech Plugin NOT found in window.Capacitor.Plugins');
                             }
                         } catch (err) {
-                            console.error('❌ Native TTS failed, falling back to Web:', err);
+                            debugLog('❌ Native TTS Error: ' + err.message);
                         }
+                    } else {
+                        debugLog('🌐 Detected Web Platform');
                     }
 
-                    // 2. Fallback ke Web Speech API (Paling stabil di Browser Chrome)
+                    // 2. Fallback ke Web Speech API
                     if (!window.speechSynthesis) {
-                        console.error('❌ SpeechSynthesis not supported!');
+                        debugLog('❌ Web Speech API not supported!');
+                        playBeep();
                         return;
                     }
 
-                    // Ensure voices are loaded
                     if (!idVoice) await loadVoices();
 
-                    const utterance = new SpeechSynthesisUtterance(message);
-                    utterance.lang = 'id-ID'; 
-                    utterance.rate = 0.9; // Slower is more natural
-                    utterance.pitch = 1.0;
-                    
-                    if (idVoice) {
-                        utterance.voice = idVoice;
-                    } else {
-                        console.warn('⚠️ ID Voice not found, trying default browser voice.');
+                    try {
+                        const utterance = new SpeechSynthesisUtterance(message);
+                        utterance.lang = 'id-ID'; 
+                        utterance.rate = 0.9;
+                        utterance.pitch = 1.0;
+                        
+                        if (idVoice) utterance.voice = idVoice;
+
+                        utterance.onstart = () => debugLog('▶️ Web Speech Started');
+                        utterance.onend = () => debugLog('⏹️ Web Speech Finished');
+                        utterance.onerror = (e) => {
+                            debugLog('❌ Web Speech Error: ' + e.error);
+                            playBeep();
+                        };
+
+                        window.speechSynthesis.cancel();
+                        window.speechSynthesis.speak(utterance);
+                    } catch (err) {
+                        debugLog('❌ Web Speak Error: ' + err.message);
+                        playBeep();
                     }
-
-                    utterance.onerror = (event) => {
-                        console.error('❌ SpeechSynthesis error:', event.error);
-                    };
-
-                    window.speechSynthesis.cancel();
-                    window.speechSynthesis.speak(utterance);
-                    console.log('🗣️ Web Speaking:', message);
                 };
 
                 Livewire.on('voice-alert', (event) => {
