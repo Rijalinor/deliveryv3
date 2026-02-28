@@ -214,6 +214,12 @@
 
                     debugLog('🗣️ Attempting to speak: ' + message);
 
+                    // List all plugins for debugging
+                    if (window.Capacitor && window.Capacitor.Plugins) {
+                        const plugins = Object.keys(window.Capacitor.Plugins);
+                        debugLog('🔌 Available Plugins: ' + plugins.join(', '));
+                    }
+
                     // 1. Cek Native Capacitor Plugin (Prioritas untuk APK)
                     const isNative = typeof window.Capacitor !== 'undefined' && window.Capacitor.getPlatform() !== 'web';
                     if (isNative) {
