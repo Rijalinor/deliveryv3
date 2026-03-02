@@ -37,7 +37,7 @@ class RunDriverTrip extends Page
         //     $this->record->update(['status' => 'on_going']);
         //     $this->record->refresh();
         // }
-        // 
+        //
         $this->dispatchMapToActiveStop();
         $this->form->fill([
             'skip_reason' => null,
@@ -419,12 +419,12 @@ class RunDriverTrip extends Page
         if ($this->record->status === 'planned') {
             $this->record->update(['status' => 'on_going']);
             $this->record->refresh();
-            
+
             Notification::make()->title('Trip Dimulai! Hati-hati di jalan.')->success()->send();
-            
+
             // ✅ VOICE ALERT: Trip Started
-            $this->dispatch('voice-alert', message: "Trip di mulai. Pastikan selalu berhati-hati saat berkendara ya.");
-            
+            $this->dispatch('voice-alert', message: 'Trip di mulai. Pastikan selalu berhati-hati saat berkendara ya.');
+
             $this->dispatchMapToActiveStop();
         }
     }
@@ -437,9 +437,9 @@ class RunDriverTrip extends Page
             ->danger()
             ->persistent()
             ->send();
-            
+
         // ✅ VOICE ALERT: Location Failed
-        $this->dispatch('voice-alert', message: "Maaf, akses lokasi belum diaktifkan. Silakan aktifkan GPS Anda terlebih dahulu.");
+        $this->dispatch('voice-alert', message: 'Maaf, akses lokasi belum diaktifkan. Silakan aktifkan GPS Anda terlebih dahulu.');
     }
 
     private function distanceMeters(float $lat1, float $lng1, float $lat2, float $lng2): float
