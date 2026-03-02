@@ -37,7 +37,13 @@ class StoreResource extends Resource
 
                 // view field untuk map picker + ORS search
                 ViewField::make('location')
-                    ->view('filament.components.map-picker')
+                    ->view('filament.components.map-picker', [
+                        'latField' => 'lat',
+                        'lngField' => 'lng',
+                        'addressField' => 'address',
+                        'statePrefix' => 'data',
+                        'radius' => (int) \App\Models\Setting::get('arrival_radius_meters', 50),
+                    ])
                     ->columnSpanFull()
                     ->dehydrated(false), // jangan disimpan sebagai field "location"
 

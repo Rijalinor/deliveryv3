@@ -7,6 +7,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ViewField;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -53,6 +54,14 @@ class ManageSettings extends Page
                         Tabs\Tab::make('Titik Gudang')
                             ->icon('heroicon-o-map-pin')
                             ->schema([
+                                ViewField::make('warehouse_map')
+                                    ->view('filament.components.map-picker', [
+                                        'latField' => 'warehouse_lat',
+                                        'lngField' => 'warehouse_lng',
+                                        'addressField' => null, // Gudang tidak pakai alamat text di settings ini
+                                        'radius' => (int) Setting::get('arrival_radius_meters', 50),
+                                    ])
+                                    ->columnSpanFull(),
                                 TextInput::make('warehouse_lat')
                                     ->label('Latitude Gudang')
                                     ->numeric()

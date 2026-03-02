@@ -20,25 +20,69 @@ class OrsGeocodingService
                 'boundary.country' => 'ID',
             ]);
 
-        if (! $resp->successful()) {
-            return ['ok' => false, 'message' => 'ORS geocode failed', 'data' => []];
+        $items = [];
+        if ($resp->successful()) {
+            $json = $resp->json();
+            $items = collect($json['features'] ?? [])->map(function ($f) {
+                $props = $f['properties'] ?? [];
+                $geom = $f['geometry']['coordinates'] ?? [null, null]; // [lon, lat]
+
+                return [
+                    'label' => $props['label'] ?? ($props['name'] ?? 'Unknown'),
+                    'lat' => isset($geom[1]) ? (float) $geom[1] : null,
+                    'lng' => isset($geom[0]) ? (float) $geom[0] : null,
+                    'source' => 'ors',
+                ];
+            })->filter(fn ($i) => $i['lat'] && $i['lng'])->values()->all();
         }
 
-        $json = $resp->json();
+        // Kalau ORS hasilnya sedikit (kurang dari 2), coba pakai Photon (Komoot)
+        // Photon biasanya lebih bagus untuk POI (nama toko/gedung)
+        if (count($items) < 2) {
+            $photonItems = $this->searchPhoton($text, $size);
+            $items = array_merge($items, $photonItems);
+        }
 
-        $items = collect($json['features'] ?? [])->map(function ($f) {
-            $props = $f['properties'] ?? [];
-            $geom = $f['geometry']['coordinates'] ?? [null, null]; // [lon, lat]
+        return ['ok' => true, 'message' => null, 'data' => collect($items)->unique('label')->values()->all()];
+    }
 
-            return [
-                'label' => $props['label'] ?? ($props['name'] ?? 'Unknown'),
-                'lat' => isset($geom[1]) ? (float) $geom[1] : null,
-                'lng' => isset($geom[0]) ? (float) $geom[0] : null,
-                'raw' => $props,
-            ];
-        })->filter(fn ($i) => $i['lat'] && $i['lng'])->values()->all();
+    public function searchPhoton(string $text, int $size = 5): array
+    {
+        try {
+            $resp = Http::timeout(10)
+                ->get('https://photon.komoot.io/api/', [
+                    'q' => $text,
+                    'limit' => $size,
+                    'lat' => -3.3190, // Bias ke Banjarmasin/Kalsel jika data minim
+                    'lon' => 114.5900,
+                ]);
 
-        return ['ok' => true, 'message' => null, 'data' => $items];
+            if (! $resp->successful()) {
+                return [];
+            }
+
+            $json = $resp->json();
+
+            return collect($json['features'] ?? [])->map(function ($f) {
+                $p = $f['properties'] ?? [];
+                $g = $f['geometry']['coordinates'] ?? [null, null];
+
+                $label = collect([
+                    $p['name'] ?? null,
+                    $p['street'] ?? null,
+                    $p['city'] ?? $p['county'] ?? null,
+                ])->filter()->join(', ');
+
+                return [
+                    'label' => $label ?: 'Unknown',
+                    'lat' => isset($g[1]) ? (float) $g[1] : null,
+                    'lng' => isset($g[0]) ? (float) $g[0] : null,
+                    'source' => 'photon',
+                ];
+            })->filter(fn ($i) => $i['lat'] && $i['lng'])->values()->all();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     public function reverse(float $lat, float $lng): array
