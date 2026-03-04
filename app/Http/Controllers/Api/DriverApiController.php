@@ -27,6 +27,7 @@ class DriverApiController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
+                'error_code' => 'VALIDATION_FAILED',
                 'message' => 'Validation failed',
                 'errors' => $validator->errors(),
             ], 422);
@@ -67,11 +68,8 @@ class DriverApiController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update location',
-                'error' => $e->getMessage(),
-            ], 500);
+            \Illuminate\Support\Facades\Log::error('API location update error: ' . $e->getMessage(), ['driver_id' => Auth::id()]);
+            throw new \App\Exceptions\ApiException('Failed to update location', 'LOCATION_UPDATE_FAILED', 500);
         }
     }
 
@@ -134,11 +132,8 @@ class DriverApiController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch active trip',
-                'error' => $e->getMessage(),
-            ], 500);
+            \Illuminate\Support\Facades\Log::error('API active trip error: ' . $e->getMessage(), ['driver_id' => Auth::id()]);
+            throw new \App\Exceptions\ApiException('Failed to fetch active trip', 'FETCH_ACTIVE_TRIP_FAILED', 500);
         }
     }
 
@@ -204,11 +199,8 @@ class DriverApiController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch trip details',
-                'error' => $e->getMessage(),
-            ], 500);
+            \Illuminate\Support\Facades\Log::error('API trip details error: ' . $e->getMessage(), ['trip_id' => $trip->id, 'driver_id' => Auth::id()]);
+            throw new \App\Exceptions\ApiException('Failed to fetch trip details', 'FETCH_TRIP_DETAILS_FAILED', 500);
         }
     }
 
@@ -248,11 +240,8 @@ class DriverApiController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch location history',
-                'error' => $e->getMessage(),
-            ], 500);
+            \Illuminate\Support\Facades\Log::error('API location history error: ' . $e->getMessage(), ['trip_id' => $trip->id, 'driver_id' => Auth::id()]);
+            throw new \App\Exceptions\ApiException('Failed to fetch location history', 'FETCH_LOCATION_HISTORY_FAILED', 500);
         }
     }
 }

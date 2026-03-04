@@ -41,10 +41,19 @@ class TripsImport implements ToCollection, WithHeadingRow
                     }
                 }
 
-                $goodsIssue = GoodsIssue::firstOrCreate(
-                    ['gi_number' => $gi],
-                    ['date' => $date->format('Y-m-d'), 'status' => 'open']
-                );
+                $goodsIssue = GoodsIssue::where('gi_number', $gi)->first();
+
+                if ($goodsIssue) {
+                    \Illuminate\Support\Facades\Log::warning("Skipping import for GI: $gi. GI number already exists.");
+
+                    return; // Skip this transaction/iteration for this GI
+                }
+
+                $goodsIssue = GoodsIssue::create([
+                    'gi_number' => $gi,
+                    'date' => $date->format('Y-m-d'),
+                    'status' => 'open'
+                ]);
 
                 foreach ($items as $item) {
                     $outletName = trim($item['outlet'] ?? $item['outlet_name'] ?? $item['customer'] ?? 'Unknown');

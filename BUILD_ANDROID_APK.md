@@ -17,7 +17,7 @@ Kalau JDK belum ada, download dari: https://adoptium.net/temurin/releases/
 
 ### 1. Install Dependencies
 ```bash
-cd /home/rijal/projectlaravel/deliveryv3
+cd c:\xampp\htdocs\deliveryv3
 npm install
 ```
 
@@ -159,7 +159,8 @@ APK akan ada di: `android/app/build/outputs/apk/release/app-release.apk`
 ### Error: "SDK location not found"
 Create `android/local.properties`:
 ```properties
-sdk.dir=/home/rijal/Android/Sdk
+# Windows (sesuaikan dengan path Android SDK kamu)
+sdk.dir=C\:\\Users\\YourName\\AppData\\Local\\Android\\Sdk
 ```
 
 ### Error: Gradle build failed

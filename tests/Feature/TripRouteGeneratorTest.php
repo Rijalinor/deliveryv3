@@ -228,4 +228,43 @@ class TripRouteGeneratorTest extends TestCase
         $etaHour = \Carbon\Carbon::parse($stopA->eta_at)->hour;
         $this->assertSame(9, $etaHour, 'Traffic factor 2x harus menggeser ETA sesuai (08:30 -> 09:00)');
     }
+
+    public function test_generate_waits_for_store_open_time(): void
+    {
+        $trip = $this->makeTrip();
+        $trip->update(['service_minutes' => 0, 'traffic_factor' => 1.0, 'start_time' => '07:00:00']);
+
+        $storeA = $this->makeStore('Toko A', 1.0, 101.0);
+        $storeA->update(['open_time' => '09:00:00']); // Toko buka jam 9 pagi
+        
+        $stopA = TripStop::create([
+            'trip_id' => $trip->id, 'store_id' => $storeA->id, 'status' => 'pending',
+        ]);
+
+        $rawDurationSec = 3600; // Driver jalan 1 jam (tiba jam 08:00)
+
+        $ors = Mockery::mock(OrsService::class);
+        $ors->shouldReceive('optimize')->once()->andReturn([
+            'routes' => [['steps' => [
+                ['type' => 'start'],
+                ['job' => $stopA->id, 'arrival' => 7 * 3600 + $rawDurationSec, 'service' => 0],
+            ]]],
+        ]);
+        $ors->shouldReceive('matrix')->once()->andReturn([
+            'durations' => [[0, $rawDurationSec], [$rawDurationSec, 0]],
+            'distances' => [[0, 1000], [1000, 0]],
+        ]);
+        $ors->shouldReceive('directions')->once()->andReturn([
+            'type' => 'FeatureCollection', 'features' => [],
+        ]);
+
+        $generator = new TripRouteGenerator($ors);
+        $generator->generate($trip->fresh());
+
+        $stopA = $stopA->refresh();
+        $this->assertNotNull($stopA->eta_at);
+
+        // ETA should be strictly max(Arrival calculation, Store Open Time) -> 09:00:00
+        $this->assertSame('09:00:00', \Carbon\Carbon::parse($stopA->eta_at)->format('H:i:s'), 'ETA harus digeser ke jam buka toko (09:00)');
+    }
 }

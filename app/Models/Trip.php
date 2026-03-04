@@ -19,6 +19,8 @@ class Trip extends Model
         'start_address',
         'start_lat',
         'start_lng',
+        'current_lat',
+        'current_lng',
         'status',
         'notice',
         'generated_at',

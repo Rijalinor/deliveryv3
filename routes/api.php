@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\DriverApiController;
 use App\Http\Controllers\Api\TripApiController;
 use Illuminate\Support\Facades\Route;
@@ -23,8 +24,12 @@ Route::get('/ping', function () {
     ]);
 });
 
-// Protected API routes - require authentication
-Route::middleware(['web', 'auth'])->group(function () {
+// Auth Routes
+Route::post('/auth/login', [AuthApiController::class, 'login'])->name('api.auth.login');
+
+// Protected API routes - require Sanctum token (or stateful cookie for PWA)
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/auth/logout', [AuthApiController::class, 'logout'])->name('api.auth.logout');
 
     // Driver Location Tracking
     Route::prefix('driver')->group(function () {
