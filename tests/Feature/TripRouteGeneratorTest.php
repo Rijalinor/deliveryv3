@@ -236,7 +236,7 @@ class TripRouteGeneratorTest extends TestCase
 
         $storeA = $this->makeStore('Toko A', 1.0, 101.0);
         $storeA->update(['open_time' => '09:00:00']); // Toko buka jam 9 pagi
-        
+
         $stopA = TripStop::create([
             'trip_id' => $trip->id, 'store_id' => $storeA->id, 'status' => 'pending',
         ]);

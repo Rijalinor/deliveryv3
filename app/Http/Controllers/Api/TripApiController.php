@@ -70,7 +70,7 @@ class TripApiController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('API mark arrived error: ' . $e->getMessage(), ['trip_id' => $trip->id, 'stop_id' => $stop->id, 'driver_id' => Auth::id()]);
+            \Illuminate\Support\Facades\Log::error('API mark arrived error: '.$e->getMessage(), ['trip_id' => $trip->id, 'stop_id' => $stop->id, 'driver_id' => Auth::id()]);
             throw new \App\Exceptions\ApiException('Failed to mark as arrived', 'MARK_ARRIVED_FAILED', 500);
         }
     }
@@ -114,7 +114,7 @@ class TripApiController extends Controller
                 ], 422);
             }
 
-            DB::transaction(function () use ($stop, $request) {
+            DB::transaction(function () use ($stop) {
                 $stop->update([
                     'status' => 'done',
                     'done_at' => now(),
@@ -134,7 +134,7 @@ class TripApiController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('API mark done error: ' . $e->getMessage(), ['trip_id' => $trip->id, 'stop_id' => $stop->id, 'driver_id' => Auth::id()]);
+            \Illuminate\Support\Facades\Log::error('API mark done error: '.$e->getMessage(), ['trip_id' => $trip->id, 'stop_id' => $stop->id, 'driver_id' => Auth::id()]);
             throw new \App\Exceptions\ApiException('Failed to mark as done', 'MARK_DONE_FAILED', 500);
         }
     }
@@ -200,7 +200,7 @@ class TripApiController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('API mark rejected error: ' . $e->getMessage(), ['trip_id' => $trip->id, 'stop_id' => $stop->id, 'driver_id' => Auth::id()]);
+            \Illuminate\Support\Facades\Log::error('API mark rejected error: '.$e->getMessage(), ['trip_id' => $trip->id, 'stop_id' => $stop->id, 'driver_id' => Auth::id()]);
             throw new \App\Exceptions\ApiException('Failed to mark as rejected', 'MARK_REJECTED_FAILED', 500);
         }
     }
@@ -263,7 +263,7 @@ class TripApiController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('API finish trip error: ' . $e->getMessage(), ['trip_id' => $trip->id, 'driver_id' => Auth::id()]);
+            \Illuminate\Support\Facades\Log::error('API finish trip error: '.$e->getMessage(), ['trip_id' => $trip->id, 'driver_id' => Auth::id()]);
             throw new \App\Exceptions\ApiException('Failed to finish trip', 'FINISH_TRIP_FAILED', 500);
         }
     }

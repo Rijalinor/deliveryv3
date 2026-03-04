@@ -33,7 +33,7 @@ class AuthApiTest extends TestCase
                     'token',
                 ],
             ]);
-            
+
         $this->assertTrue($response->json('success'));
     }
 

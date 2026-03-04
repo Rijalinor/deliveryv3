@@ -3,17 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use App\Models\User;
 
 class AuthApiController extends Controller
 {
     /**
      * Authenticate driver and issue Sanctum token.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function login(Request $request)
@@ -32,7 +31,7 @@ class AuthApiController extends Controller
             ], 422);
         }
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        if (! Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
                 'success' => false,
                 'error_code' => 'INVALID_CREDENTIALS',
@@ -43,9 +42,10 @@ class AuthApiController extends Controller
         $user = User::where('email', $request->email)->firstOrFail();
 
         // Ensure the user has the 'driver' role
-        if (!$user->hasRole('driver')) {
+        if (! $user->hasRole('driver')) {
             // Revoke any accidentally created session if not a driver
             Auth::logout();
+
             return response()->json([
                 'success' => false,
                 'error_code' => 'UNAUTHORIZED_ROLE',
@@ -73,7 +73,6 @@ class AuthApiController extends Controller
     /**
      * Revoke current driver token.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function logout(Request $request)

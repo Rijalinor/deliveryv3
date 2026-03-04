@@ -31,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'success' => false,
                     'error_code' => 'UNAUTHENTICATED',
                     'message' => 'Unauthenticated or token expired.',
-                    'request_id' => (string) \Illuminate\Support\Str::uuid()
+                    'request_id' => (string) \Illuminate\Support\Str::uuid(),
                 ], 401);
             }
         });
@@ -43,7 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'error_code' => 'VALIDATION_FAILED',
                     'message' => 'Validation failed',
                     'errors' => $e->errors(),
-                    'request_id' => (string) \Illuminate\Support\Str::uuid()
+                    'request_id' => (string) \Illuminate\Support\Str::uuid(),
                 ], 422);
             }
         });
@@ -54,7 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'success' => false,
                     'error_code' => 'NOT_FOUND',
                     'message' => 'Resource not found or does not exist.',
-                    'request_id' => (string) \Illuminate\Support\Str::uuid()
+                    'request_id' => (string) \Illuminate\Support\Str::uuid(),
                 ], 404);
             }
         });
@@ -64,12 +64,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 // Return generic message in production unless it's an HttpException, to not expose stack traces.
                 $statusCode = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
                 $message = config('app.debug') ? $e->getMessage() : 'Internal Server Error';
-                
+
                 return response()->json([
                     'success' => false,
                     'error_code' => 'SERVER_ERROR',
                     'message' => $message,
-                    'request_id' => (string) \Illuminate\Support\Str::uuid()
+                    'request_id' => (string) \Illuminate\Support\Str::uuid(),
                 ], $statusCode);
             }
         });

@@ -14,8 +14,11 @@ class TripApiTest extends TestCase
     use RefreshDatabase;
 
     private User $driver;
+
     private Trip $trip;
+
     private TripStop $stop;
+
     private string $token;
 
     protected function setUp(): void
@@ -60,7 +63,7 @@ class TripApiTest extends TestCase
                 'success' => true,
                 'data' => [
                     'status' => 'arrived',
-                ]
+                ],
             ]);
 
         $this->assertDatabaseHas('trip_stops', [

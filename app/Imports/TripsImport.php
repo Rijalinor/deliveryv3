@@ -52,7 +52,7 @@ class TripsImport implements ToCollection, WithHeadingRow
                 $goodsIssue = GoodsIssue::create([
                     'gi_number' => $gi,
                     'date' => $date->format('Y-m-d'),
-                    'status' => 'open'
+                    'status' => 'open',
                 ]);
 
                 foreach ($items as $item) {
