@@ -165,7 +165,10 @@ class ViewDriverTrip extends ViewRecord
                 ->requiresConfirmation()
                 ->action(function () {
                     $this->record->update(['status' => 'done']);
-                    $this->notify('success', 'Trip diselesaikan');
+                    Notification::make()
+                        ->title('Trip diselesaikan')
+                        ->success()
+                        ->send();
                 }),
 
             Actions\Action::make('run')

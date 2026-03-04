@@ -173,7 +173,10 @@ class ViewTrip extends ViewRecord
                 ->visible(fn () => $this->record->status === 'planned')
                 ->action(function () {
                     $this->record->update(['status' => 'on_going']);
-                    $this->notify('success', 'Trip dimulai');
+                    Notification::make()
+                        ->title('Trip dimulai')
+                        ->success()
+                        ->send();
                 }),
 
             Actions\Action::make('generate_ors')
@@ -209,7 +212,10 @@ class ViewTrip extends ViewRecord
                 ->requiresConfirmation()
                 ->action(function () {
                     $this->record->update(['status' => 'done']);
-                    $this->notify('success', 'Trip diselesaikan');
+                    Notification::make()
+                        ->title('Trip diselesaikan')
+                        ->success()
+                        ->send();
                 }),
 
             Actions\Action::make('reset')
@@ -220,7 +226,10 @@ class ViewTrip extends ViewRecord
                 ->requiresConfirmation()
                 ->action(function () {
                     $this->record->update(['status' => 'planned']);
-                    $this->notify('success', 'Trip di-reset ke planned');
+                    Notification::make()
+                        ->title('Trip di-reset ke planned')
+                        ->success()
+                        ->send();
                 }),
         ];
     }
