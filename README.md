@@ -9,6 +9,25 @@
 
 > 📝 Screenshot tersedia di folder `docs/screenshots/`
 
+## 📸 Preview Aplikasi
+
+Berikut adalah tampilan utama dari sistem DeliveryV3:
+
+### Admin Dashboard & Monitoring
+| Admin Dashboard | Live Monitoring |
+| :---: | :---: |
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Monitoring](docs/screenshots/monitoring.png) |
+
+### Real-Time Routing & Optimization
+| Trip Detail (Route Optimization) | Goods Issue Management |
+| :---: | :---: |
+| ![Trip Detail](docs/screenshots/trip-detail.png) | ![Goods Issues](docs/screenshots/goods-issues.png) |
+
+### Driver Experience (Mobile Friendly)
+| Driver Trip List | Run Trip & Geofencing |
+| :---: | :---: |
+| ![Driver Trips](docs/screenshots/driver-trips.png) | ![Run Trip](docs/screenshots/run-trip.png) |
+
 ---
 
 ## 📑 Daftar Isi

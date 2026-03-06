@@ -2,39 +2,38 @@
 
 Folder ini berisi screenshot aplikasi DeliveryV3 untuk dokumentasi.
 
-## Screenshot yang Diperlukan
+## Screenshot yang Tersedia
 
-Ambil screenshot dari halaman-halaman berikut dan simpan di folder ini:
+Berikut adalah preview dari screenshot yang sudah diambil:
 
 ### 1. Admin Panel
-- **dashboard.png** - Halaman dashboard admin
-- **trips-list.png** - Daftar trips
-- **trip-detail.png** - Detail trip dengan peta rute
-- **stores-list.png** - Daftar stores
-- **goods-issues.png** - Daftar Goods Issues
-- **monitoring.png** - Halaman monitoring trip aktif
+| Dashboard | Trip Detail |
+| :---: | :---: |
+| ![Dashboard](./dashboard.png) | ![Trip Detail](./trip-detail.png) |
+
+| Monitoring | Goods Issues |
+| :---: | :---: |
+| ![Monitoring](./monitoring.png) | ![Goods Issues](./goods-issues.png) |
+
+| Stores List | Settings |
+| :---: | :---: |
+| ![Stores](./stores-list.png) | ![Settings](./pengaturan.png) |
 
 ### 2. Driver Panel
-- **driver-trips.png** - Daftar trip driver
-- **run-trip.png** - Halaman run trip dengan peta
-- **trip-progress.png** - Progress bar trip
+| Driver Trips | Run Trip |
+| :---: | :---: |
+| ![Driver Trips](./driver-trips.png) | ![Run Trip](./run-trip.png) |
 
-### 3. Features
-- **route-optimization.png** - Peta dengan rute yang sudah di-optimize
-- **stop-status.png** - Detail stop dengan status
-- **gi-import.png** - Form import GI
+## Cara Mengambil Screenshot (Untuk Update)
 
-## Cara Mengambil Screenshot
+1. Buka aplikasi di browser.
+2. Login sebagai admin atau driver.
+3. Gunakan `Windows + Shift + S` untuk mengambil gambar.
+4. Simpan di folder ini dengan nama file yang sesuai (misal: `dashboard.png`).
 
-1. Buka aplikasi di browser: https://unremonstrating-inconstantly-cynthia.ngrok-free.dev/admin
-2. Login sebagai admin atau driver
-3. Navigate ke halaman yang ingin di-screenshot
-4. Tekan `Windows + Shift + S` untuk snipping tool
-5. Simpan dengan nama sesuai list di atas
+## Penggunaan di README Utama
 
-## Update README
-
-Setelah screenshot diambil, pastikan path di README.md sudah benar:
+Gunakan path relatif dari root proyek:
 ```markdown
-![Dashboard Preview](./docs/screenshots/dashboard.png)
+![Dashboard Preview](docs/screenshots/dashboard.png)
 ```
